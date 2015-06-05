@@ -1,9 +1,4 @@
-<!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>src 文件夹内容</title>
-</head>
 <body>
 <div class="md-section-divider"></div>
 
