@@ -1,7 +1,7 @@
 // pl/0 compiler with code generation
 #define _CRT_SECURE_NO_WARNINGS
 #define NDEBUG
-//#include <ctype.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -1973,19 +1973,19 @@ void init() {
 	wsym[28] = writesym;
 
 	// special symbol(single character)
-	ssym['+'] = plus;
-	ssym['-'] = minus;
-	ssym['*'] = times;
-	ssym['/'] = slash;
-	ssym['('] = lparen;
-	ssym[')'] = rparen;
-	ssym['='] = eql;
-	ssym[','] = comma;
-	ssym['.'] = period;
-	ssym[';'] = semicolon;
-	ssym[':'] = colon;
-	ssym['['] = lbracket;
-	ssym[']'] = rbracket;
+	ssym[(unsigned)'+'] = plus;
+	ssym[(unsigned)'-'] = minus;
+	ssym[(unsigned)'*'] = times;
+	ssym[(unsigned)'/'] = slash;
+	ssym[(unsigned)'('] = lparen;
+	ssym[(unsigned)')'] = rparen;
+	ssym[(unsigned)'='] = eql;
+	ssym[(unsigned)','] = comma;
+	ssym[(unsigned)'.'] = period;
+	ssym[(unsigned)';'] = semicolon;
+	ssym[(unsigned)':'] = colon;
+	ssym[(unsigned)'['] = lbracket;
+	ssym[(unsigned)']'] = rbracket;
 
 	// instruction name
 	strcpy(mnemonic[lit], "lit");
