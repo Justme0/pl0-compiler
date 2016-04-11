@@ -1,0 +1,5 @@
+var i: integer;
+begin
+  i := 10;
+  write(i * 2);
+end.
