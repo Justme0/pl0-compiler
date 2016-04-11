@@ -1,0 +1,13 @@
+var num: integer;
+function fib(i: integer): integer;
+begin
+    if (i <= 1) then fib := i;
+    fib := fib(i - 1) + fib(i - 2);
+end;
+
+begin
+    while (true) do begin
+        read(num);
+        write(fib(num));
+    end;
+end.

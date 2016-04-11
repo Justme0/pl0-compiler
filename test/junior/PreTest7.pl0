@@ -1,0 +1,11 @@
+var i,j,k:integer;
+    x,y:Boolean;
+
+begin
+    x:=true;y:=false;
+    i:=1;j:=i+1;k:=j+1;
+    if (j<i)and x or (y=y) and (k>=j) then
+	write(1)	/* 1 */
+    else
+	write(0)
+end.

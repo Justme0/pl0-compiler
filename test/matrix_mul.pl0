@@ -1,0 +1,70 @@
+const LEN = 2;
+type Vec = array[0..1] of real;
+     Matrix = array[0..1] of Vec;
+var a, b, c: Matrix;
+
+procedure mul;
+var i, j, k: integer;
+begin
+    i := 0;
+    while (i < LEN) do begin
+        j := 0;
+        while (j < LEN) do begin
+            c[i][j] := 0;
+            k := 0;
+            while (k < LEN) do begin
+                c[i][j] := a[i][k] * b[k][j] + c[i][j];
+            k := k + 1;
+            end;
+        j := j + 1;
+        end;
+    i := i + 1;
+    end;
+end;
+
+procedure output(tag: integer);
+var i, j: integer;
+begin
+    i := 0;
+    while (i < LEN) do begin
+        j := 0;
+        while (j < LEN) do begin
+        if (tag = 1) then begin
+            write(a[i][j]);
+        end else if (tag = 2) then begin
+            write(b[i][j]);
+        end else begin
+            write(c[i][j]);
+        end;
+        j := 1 + j;
+        end;
+        i := 1 + i;
+    end;
+end;
+
+procedure input(tag: integer);
+var i, j: integer;
+begin
+    i := 0;
+    while (i < LEN) do begin
+        j := 0;
+        while (j < LEN) do begin
+            if (tag = 1) then begin
+                read(a[i][j]);
+            end else begin
+                read(b[i][j]);
+            end;
+            j := 1 + j;
+        end;
+        i := 1 + i;
+    end;
+end;
+
+begin
+    call input(1);
+    call input(2);
+    call mul;
+    call output(1);
+    call output(2);
+    call output(3);
+end.

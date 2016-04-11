@@ -1,0 +1,15 @@
+
+var k:integer;
+
+function factorial(n:integer):integer;
+
+    begin
+	if n<0 then factorial:=10<>20		/* error */
+	else if n=0 then factorial:=1.0		/* error */
+	else factorial:=factorial(n-1)*n
+    end;
+
+begin
+    read(k);
+    write(factorial(k))
+end.

@@ -1,0 +1,31 @@
+
+type vector = array[0..9] of integer; 
+var  data : vector;
+     low, mid, high : integer;
+
+procedure readArray;
+  
+    begin
+	data[0]:=12; data[1]:=24; data[2]:=36; 
+	data[3]:=48; data[4]:=60; data[5]:=72;
+	data[6]:=84; data[7]:=96; data[8]:=108; data[9]:=120
+    end;
+
+function search(n:integer):integer;
+
+    begin
+	search:= -1;
+	while low<=high do
+	    begin
+		mid:=(low+high)div 2;
+		if data[mid]=n then begin search:=mid; exit end
+		else if data[mid]<n then low:=mid+1
+		else high:=mid-1
+	    end
+    end;
+
+begin
+    call readArray;
+    low:=0;high:=9;
+    write(search(data))	/* error */
+end.

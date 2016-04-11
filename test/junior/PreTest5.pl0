@@ -1,0 +1,15 @@
+
+type vector = array[1..9] of integer;
+var  data : vector;
+     i : integer;
+
+begin
+    data[1]:=i; i:=data[2];
+    data[4+5]:=data[2,3]; 	/* error */
+    data[1][2]:=1		/* error */
+end.
+
+
+
+
+    

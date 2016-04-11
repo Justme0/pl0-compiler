@@ -1,0 +1,47 @@
+const m=7, n=85;
+var x,y,z,q,r: integer;
+
+function multiply(x:integer; y:integer):integer;
+    var a,b:integer;
+    begin
+        a:=x; b:=y; z:=0;
+        while b>0 do
+            begin
+                if odd (b) then z:=z+a;
+                a:=2*a; b:=b div 2;
+            end;
+	multiply:=z;
+    end;
+
+procedure divide(x:integer; y:integer);
+    var w:integer;
+    begin
+        r:=x; q:=0; w:=y;
+	while w<=r do w:=2*w;
+	while w>y do
+	    begin
+	        q:=2*q; w:=w div 2;
+		if w<=r then
+		    begin
+		        r:=r-w;
+			q:=q+1;
+		    end
+            end;
+	write(q, r)
+    end;
+
+function gcd(f:integer; g:integer):integer;
+    begin
+	while f<>g do
+	    begin
+	        if f<g then g:=g-f;
+		if g<f then f:=f-g;
+	    end;
+	gcd := f
+    end;
+
+begin
+    x:=m; y:=n; write(multiply(x,y));	/* 595 */
+    x:=25; y:=3; call divide(x,y);	/* 8,1 */
+    x:=34; y:=36; z:=gcd(x,y); write(z); /* 2 */
+end.

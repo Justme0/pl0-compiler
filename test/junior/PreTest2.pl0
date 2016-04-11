@@ -1,0 +1,15 @@
+
+procedure p(n:integer);
+    begin
+	n:=j;			/* error */
+    end;
+function f(n:integer):integer;
+
+    begin
+	n:= p(n);		/* error */
+    end;
+
+begin
+    call f(5);			/* error */
+    write(ff(5))		/* error */
+end.

@@ -1,0 +1,46 @@
+
+type vector = array[0..9] of integer; 
+var  data : vector;
+     i : integer;
+
+procedure readArray;
+  
+    begin
+	data[0]:=123; data[1]:=52; data[2]:=8; 
+	data[3]:=74; data[4]:=62; data[5]:=74;
+	data[6]:=55; data[7]:=44; data[8]:=74; data[9]:=80
+    end;
+
+
+procedure bubbleSort(low:integer; high:integer);
+    var j,k,temp:integer;
+
+    begin
+	k:=high;
+	while k<>low do
+	    begin
+		j:=low;
+		while j<>k do
+		    begin
+			if data[j]>data[j+1] then
+			    begin
+				temp:=data[j];
+				data[j]:=data[j+1];
+				data[j+1]:=temp
+			    end;
+			j:=j+1;
+		    end;
+		k:=k-1
+	    end
+    end;
+
+begin
+    call readArray;
+    call bubbleSort(0,9);
+    i:=0;
+    while i<10 do
+	begin
+	    write(data[i]);	/* 8,44,52,55,62,74,74,74,80,123 */
+	    i:=i+1
+	end
+end.

@@ -1,0 +1,88 @@
+type Arr = array[0..9] of integer;
+
+var a: Arr;
+
+/*
+** [first, last) 中存在 value 则返回其下标
+** 否则返回 last
+*/
+function bsearch(first: integer; last: integer; value: integer): integer;
+    var i: integer; /* 定义局部变量 */
+        ret: integer;
+    begin
+        ret := last;
+        while (first < last) do begin
+            i := first + (last - first) div 2;
+            if (a[i] = value) then begin
+                bsearch := i;   /* 相当于 return */
+            end else if (a[i] < value) then begin
+                first := i + 1;
+            end else begin
+                last := i;
+            end;
+        end;
+
+        bsearch := ret;
+    end;
+
+/*
+** 区间表示为 [first, last)
+** 返回可插入 value 的第一个位置
+*/
+function lowerBound(first: integer; last: integer; value: integer): integer;
+    var len: integer;
+        half: integer;
+        middle: integer;
+    begin
+        len := last - first;
+        while (len > 0) do begin
+            half := len div 2;
+            middle := first + half;
+            if (a[middle] < value) then begin
+                first := middle + 1;
+                len := len - half - 1;
+            end else begin
+                len := half;
+            end;
+        end;
+
+        bsearch := first;
+    end;
+
+/*
+** 返回在 [first, last) 中是否存在 value
+*/
+function binarySrch(first: integer; last: integer; value: integer): Boolean;
+    var i: integer;
+    begin
+        i := lowerBound(first, last, value);
+        /* 关系操作符低于逻辑操作符 */
+        binarySrch := (i <> last) and not(value < a[i]);
+    end;
+
+/* main() */
+begin
+    a[0] := -3;
+    a[1] := -2;
+    a[2] := 0;
+    a[3] := 1;
+    a[4] := 1;
+    a[5] := 7;
+    a[6] := 8;
+    a[7] := 11;
+    a[8] := 22;
+    a[9] := 27;
+
+    write(bsearch(0, 10, 22));  /* 8 */
+    write(bsearch(0, 10, -1));  /* 10 */
+    if (binarySrch(0, 10, 22)) then begin
+        write(1);               /* 1 */
+    end else begin
+        write(0);
+    end;
+    if (binarySrch(0, 10, -1)) then begin
+        write(1);
+    end else begin
+        write(0);               /* 0 */
+    end;
+end.

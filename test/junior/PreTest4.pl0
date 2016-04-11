@@ -1,0 +1,13 @@
+var n:integer;
+procedure movement(u:integer; v:integer);
+
+    begin
+    u:= Boolean;	/* error */
+    v:= true;	/* error */
+    write(u,v)
+    end;
+
+begin
+    read(n);
+    call movement(1,3)
+end..		/* error */

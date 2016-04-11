@@ -1,0 +1,19 @@
+type vector = array[0..9] of integer; 
+var data : vector;
+    k:integer;
+    b:Boolean;
+
+function factorial(n:integer):integer;
+
+    begin
+	if n<0 then factorial:=0
+	else if n=0 then factorial:=1
+	else factorial:=factorial(n-1)*n
+    end;
+
+begin
+    read(k, b, data);		/* 2 errors */
+    write(factorial(k));
+    write(1,2,3,4);
+    write(data)			/* error */
+end.
