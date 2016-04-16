@@ -1,9 +1,9 @@
 # 示例
 本编译器可解释执行下面的程序（二分查找）
 
-``` pascal
+``` c
 /* bsearch.pl0 */
- 
+
 type Arr = array[0..9] of integer; /* typedef an array */
 var a: Arr; /* define a global variable */
 
@@ -64,8 +64,7 @@ end.
 
 # 实现
 
-*   数据栈的每个单元是32位
-*   数据栈中各种数据的表示
+* 数据栈中的每个单元是32位，下面是各种类型的数据的表示
 
 | 类型 | 表示 |
 | --- | --- |
@@ -74,9 +73,7 @@ end.
 | Boolean | 为32位，true的内存表示为0x00000001，false为0x00000000 |
 | 地址（下标） | 用32位有符号数补码表示（应是正数） |
 
-*   约定
-    *   odd，mod 只对 integer 操作
-    *   对 Boolean 的关系操作只有 eql 与 neq，不能比较大小
+* 约定 odd，mod 只能对 integer 操作；对 Boolean 的关系操作只有 eql 与 neq，不能比较大小
 
 # 编译错误编号及含义
 
