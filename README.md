@@ -2,27 +2,25 @@
 本编译器可解释执行下面的程序（二分查找）
 
 ``` pascal
-/* binary search example */
-
+/* bsearch.pl0 */
+ 
 type Arr = array[0..9] of integer; /* typedef an array */
-
 var a: Arr; /* define a global variable */
 
 /*
-** [first, last) 中存在 value 则返回其下标
-** 否则返回 last
+** Find value in [first, last).
+** If found, return its index; otherwise return last index.
 */
 function bsearch(first: integer; last: integer; value: integer): integer;
-var i: integer; /* 定义局部变量 */
+var i: integer; /* define local variables */
     ret: integer;
 begin
     ret := last;
     while (first < last) do begin
         i := first + (last - first) div 2;
         if (a[i] = value) then begin
-            bsearch := i;   /* 相当于 return */
-        end else if (a[i] < value) then begin
-            first := i + 1;
+            bsearch := i;   /* similar to return */
+        end else if (a[i] < value) then begin first := i + 1;
         end else begin
             last := i;
         end;
@@ -78,7 +76,7 @@ end.
 
 *   约定
     *   odd，mod 只对 integer 操作
-        *   对 Boolean 的关系操作只有 eql 与 neq，不能比较大小
+    *   对 Boolean 的关系操作只有 eql 与 neq，不能比较大小
 
 # 编译错误编号及含义
 
