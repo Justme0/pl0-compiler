@@ -16,7 +16,8 @@ begin
         i := first + (last - first) div 2;
         if (a[i] = value) then begin
             bsearch := i;   /* similar to return */
-        end else if (a[i] < value) then begin first := i + 1;
+        end else if (a[i] < value) then begin
+            first := i + 1;
         end else begin
             last := i;
         end;

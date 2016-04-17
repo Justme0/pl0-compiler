@@ -20,7 +20,8 @@ begin
         i := first + (last - first) div 2;
         if (a[i] = value) then begin
             bsearch := i;   /* similar to return */
-        end else if (a[i] < value) then begin first := i + 1;
+        end else if (a[i] < value) then begin
+            first := i + 1;
         end else begin
             last := i;
         end;
@@ -65,7 +66,7 @@ $ ./pl0 test.pl0
 
 # test 文件夹内容
 
-若干 PL/0 程序，作为测试程序。
+若干 PL/0 程序，作为测试程序
 
 # doc 文件夹内容
 文档说明
