@@ -47,6 +47,14 @@ begin
 end.
 ```
 
+# 安装
+```bash
+$ git clone https://github.com/Justme0/pl0-compiler.git
+$ cd pl0-compiler/src
+$ make
+$ ./pl0 test.pl0
+```
+
 # src 文件夹内容
 
 | 程序名 | 说明 |
