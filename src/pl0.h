@@ -4,105 +4,100 @@
 
 typedef unsigned long long SymbolType;
 
-#define norw	29             // no. of reserved words
-#define txmax	100            // length of identifier table
-#define nmax	14             // max. no. of digits in numbers
-#define al		10             // length of identifiers
-//#define amax       2047           // maximum address ÎªÊ²Ã´µØÖ·×î´óÊÇ2047£¿
-#define amax			LONG_MAX			// TODO: ½«¸¡µãÒ²´æÔÚ long ĞÍµÄ num ÖĞ
-#define MAX_INTEGER		LONG_MAX
-#define MAX_FLOAT		FLT_MAX
-#define levmax	3              // maximum depth of block nesting
-#define cxmax	2000           // size of code array
+#define norw 29   // no. of reserved words
+#define txmax 100 // length of identifier table
+#define nmax 14   // max. no. of digits in numbers
+#define al 10     // length of identifiers
+//#define amax       2047           // maximum address ä¸ºä»€ä¹ˆåœ°å€æœ€å¤§æ˜¯2047ï¼Ÿ
+#define amax LONG_MAX // TODO: å°†æµ®ç‚¹ä¹Ÿå­˜åœ¨ long å‹çš„ num ä¸­
+#define MAX_INTEGER LONG_MAX
+#define MAX_FLOAT FLT_MAX
+#define levmax 3   // maximum depth of block nesting
+#define cxmax 2000 // size of code array
 
-#define nul			0x1
-#define ident		0x2
-#define number		0x4
-#define plus		0x8
-#define minus		0x10
-#define times		0x20
-#define slash		0x40
-#define oddsym		0x80
-#define eql			0x100
-#define neq			0x200
-#define lss			0x400
-#define leq			0x800
-#define gtr			0x1000
-#define geq			0x2000
-#define lparen		0x4000
-#define rparen		0x8000
-#define comma		0x10000
-#define semicolon	0x20000
-#define period		0x40000
-#define becomes		0x80000
-#define colon		0x100000
-#define endsym		0x200000
-#define ifsym		0x400000
-#define thensym		0x800000
-#define whilesym	0x1000000
-#define dosym		0x2000000
-#define callsym		0x4000000
-#define constsym	0x8000000
-#define varsym		0x10000000
-#define procsym		0x20000000
-#define typesym		0x40000000
-#define arraysym	0x80000000
-#define ofsym		0x100000000
-#define integersym	0x200000000
-#define realsym		0x400000000
-#define booleansym	0x800000000
-#define funcsym		0x1000000000
-#define elsesym		0x2000000000
-#define writesym	0x4000000000
-#define readsym		0x8000000000
-#define breaksym	0x10000000000
-#define orsym		0x20000000000
-#define andsym		0x40000000000
-#define notsym		0x80000000000
-#define divsym		0x100000000000
-#define modsym		0x200000000000
-#define truesym		0x400000000000
-#define falsesym	0x800000000000
-#define beginsym	0x1000000000000
-#define lbracket	0x2000000000000
-#define rbracket	0x4000000000000
-#define rangesym	0x8000000000000
+#define nul 0x1
+#define ident 0x2
+#define number 0x4
+#define plus 0x8
+#define minus 0x10
+#define times 0x20
+#define slash 0x40
+#define oddsym 0x80
+#define eql 0x100
+#define neq 0x200
+#define lss 0x400
+#define leq 0x800
+#define gtr 0x1000
+#define geq 0x2000
+#define lparen 0x4000
+#define rparen 0x8000
+#define comma 0x10000
+#define semicolon 0x20000
+#define period 0x40000
+#define becomes 0x80000
+#define colon 0x100000
+#define endsym 0x200000
+#define ifsym 0x400000
+#define thensym 0x800000
+#define whilesym 0x1000000
+#define dosym 0x2000000
+#define callsym 0x4000000
+#define constsym 0x8000000
+#define varsym 0x10000000
+#define procsym 0x20000000
+#define typesym 0x40000000
+#define arraysym 0x80000000
+#define ofsym 0x100000000
+#define integersym 0x200000000
+#define realsym 0x400000000
+#define booleansym 0x800000000
+#define funcsym 0x1000000000
+#define elsesym 0x2000000000
+#define writesym 0x4000000000
+#define readsym 0x8000000000
+#define breaksym 0x10000000000
+#define orsym 0x20000000000
+#define andsym 0x40000000000
+#define notsym 0x80000000000
+#define divsym 0x100000000000
+#define modsym 0x200000000000
+#define truesym 0x400000000000
+#define falsesym 0x800000000000
+#define beginsym 0x1000000000000
+#define lbracket 0x2000000000000
+#define rbracket 0x4000000000000
+#define rangesym 0x8000000000000
 
-enum object {
-	CONSTANT,
-	VARIABLE,
-	PROC,
-	FUNC,
-	TAG
-};
+enum object { CONSTANT, VARIABLE, PROC, FUNC, TAG };
 
 enum fct {
-	lit,
-	opr,
-	lod,
-	sto,
-	cal,
-	Int,
-	jmp,
-	jpc,	// Õ»¶¥Îª0Ê±×ª£¬Ìø×ªºóÕ»¶¥Öµ¾ÍÃ»ÓÃÁË
-	jp0,	// Õ»¶¥Îª0Ê±×ª£¬´ËÊ± Boolean ±í´ïÊ½µÄÖµ¾ÍÊÇÕ»¶¥Öµ£¬Ìø×ªºó»¹ĞèÒª
-	jp1,	// Õ»¶¥Îª1Ê±×ª£¬´ËÊ± Boolean ±í´ïÊ½µÄÖµ¾ÍÊÇÕ»¶¥Öµ£¬Ìø×ªºó»¹ĞèÒª
-	lda,	// load for a[i]
-	sta,	// store for a[i]
-	ckb,	// check bounds, µ¥¶À×÷ÎªÒ»ÌõÖ¸Áî¿ÉÄÜ²»ºÏÊÊ
-	ppa,	// pop arguments, º¯Êıµ÷ÓÃÍê³ÉºóÕ»¶¥Ö¸Õë»Ö¸´µ½²ÎÊıÑ¹Õ»Ç°µÄÎ»ÖÃ£¬address ÓòÎª²ÎÊı¸öÊı
-	rva		// reverse arguments(ÕæÕıÊµÏÖÊ±¿ÉÄÜ²»ÓÃÕâÑù)£¬address ÓòÎª²ÎÊı¸öÊı
+  lit,
+  opr,
+  lod,
+  sto,
+  cal,
+  Int,
+  jmp,
+  jpc, // æ ˆé¡¶ä¸º0æ—¶è½¬ï¼Œè·³è½¬åæ ˆé¡¶å€¼å°±æ²¡ç”¨äº†
+  jp0, // æ ˆé¡¶ä¸º0æ—¶è½¬ï¼Œæ­¤æ—¶ Boolean è¡¨è¾¾å¼çš„å€¼å°±æ˜¯æ ˆé¡¶å€¼ï¼Œè·³è½¬åè¿˜éœ€è¦
+  jp1, // æ ˆé¡¶ä¸º1æ—¶è½¬ï¼Œæ­¤æ—¶ Boolean è¡¨è¾¾å¼çš„å€¼å°±æ˜¯æ ˆé¡¶å€¼ï¼Œè·³è½¬åè¿˜éœ€è¦
+  lda, // load for a[i]
+  sta, // store for a[i]
+  ckb, // check bounds, å•ç‹¬ä½œä¸ºä¸€æ¡æŒ‡ä»¤å¯èƒ½ä¸åˆé€‚
+  ppa, // pop arguments, å‡½æ•°è°ƒç”¨å®Œæˆåæ ˆé¡¶æŒ‡é’ˆæ¢å¤åˆ°å‚æ•°å‹æ ˆå‰çš„ä½ç½®ï¼Œaddress
+       // åŸŸä¸ºå‚æ•°ä¸ªæ•°
+  rva  // reverse arguments(çœŸæ­£å®ç°æ—¶å¯èƒ½ä¸ç”¨è¿™æ ·)ï¼Œaddress åŸŸä¸ºå‚æ•°ä¸ªæ•°
 };
 
-#define INSTRUCTION_NUM			15
-#define INSTRUCTION_FUN_LEN		3
-char mnemonic[INSTRUCTION_NUM][INSTRUCTION_FUN_LEN + 1];	// ĞéÄâ»ú´úÂëÖ¸ÁîÃû³Æ
+#define INSTRUCTION_NUM 15
+#define INSTRUCTION_FUN_LEN 3
+char mnemonic[INSTRUCTION_NUM][INSTRUCTION_FUN_LEN + 1]; // è™šæ‹Ÿæœºä»£ç æŒ‡ä»¤åç§°
 
 typedef struct {
-	enum fct f;		// function code
-	long l; 		// level
-	long a; 		// displacement address
-	// 	long src_line;	// ³öÏÖ RTE Ê±Ö¸³öÔ´³ÌĞòÎ»ÖÃ
+  enum fct f; // function code
+  long l;     // level
+  long a;     // displacement address
+              // 	long src_line;	// å‡ºç° RTE æ—¶æŒ‡å‡ºæºç¨‹åºä½ç½®
 } instruction;
 /*
    lit 0, a : load constant a
@@ -117,79 +112,83 @@ typedef struct {
    jp1 0, a : jump conditional to a when stack top is 1
    */
 
-char ch;               // last character read
-SymbolType sym;        // last symbol read
-char g_id[al+1];         // last identifier read
+char ch;           // last character read
+SymbolType sym;    // last symbol read
+char g_id[al + 1]; // last identifier read
 
-#define TRUE_VALUE		0x00000001
-#define FALSE_VALUE		0x00000000
-long g_num;              // last number read
-long cc;               // character count, ¸Õ¸Õ¶ÁµÄ×Ö·ûµÄÏÂ±ê£¨·ÇÏÂÒ»Î»ÖÃ£©
-long ll;               // line length
-long kk;               // ¼ÇÂ¼½Ï´óµÄ±êÊ¶·û³¤¶È£¬³õÊ¼Îª±êÊ¶·û×î´ó³¤¶È
-long err;			   // ±àÒë´íÎóµÄÊıÄ¿
-long cx;               // code allocation index£¬Ö¸ÏòÏÂÒ»Î»ÖÃ
+#define TRUE_VALUE 0x00000001
+#define FALSE_VALUE 0x00000000
+long g_num; // last number read
+long cc;    // character count, åˆšåˆšè¯»çš„å­—ç¬¦çš„ä¸‹æ ‡ï¼ˆéä¸‹ä¸€ä½ç½®ï¼‰
+long ll;    // line length
+long kk;    // è®°å½•è¾ƒå¤§çš„æ ‡è¯†ç¬¦é•¿åº¦ï¼Œåˆå§‹ä¸ºæ ‡è¯†ç¬¦æœ€å¤§é•¿åº¦
+long err;   // ç¼–è¯‘é”™è¯¯çš„æ•°ç›®
+long cx;    // code allocation indexï¼ŒæŒ‡å‘ä¸‹ä¸€ä½ç½®
 
-#define LINE_MAX_LEN	100
-char line[LINE_MAX_LEN];         // »º´æÒ»ĞĞ´úÂë
-char a[al+1];
-instruction code[cxmax+1];
-char word[norw][al+1];	// list of reserved word names
-SymbolType wsym[norw];	// internal representation of reserved words
-SymbolType ssym[256];	// list of special symbols(hashtable)
-SymbolType declbegsys, statbegsys, facbegsys;	// declaration, statement, factor begin symbol set
+#define LINE_MAX_LEN 100
+char line[LINE_MAX_LEN]; // ç¼“å­˜ä¸€è¡Œä»£ç 
+char a[al + 1];
+instruction code[cxmax + 1];
+char word[norw][al + 1]; // list of reserved word names
+SymbolType wsym[norw];   // internal representation of reserved words
+SymbolType ssym[256];    // list of special symbols(hashtable)
+SymbolType declbegsys, statbegsys,
+    facbegsys; // declaration, statement, factor begin symbol set
 
-typedef struct TypeRecord * DataType;
+typedef struct TypeRecord *DataType;
 
 typedef struct DopeVec {
-	DataType elem_type;
-	long lower_bound;
-	long upper_bound;	// [lower_bound, upper_bound)
-	long n;				// n = upper_bound - lower_bound
-	long const_offset;
+  DataType elem_type;
+  long lower_bound;
+  long upper_bound; // [lower_bound, upper_bound)
+  long n;           // n = upper_bound - lower_bound
+  long const_offset;
 } DopeVec;
-DopeVec g_dope_vec;		// ¹© enter()
+DopeVec g_dope_vec; // ä¾› enter()
 
 typedef struct TypeRecord {
-	char name[al + 1];
-	DopeVec dope_vec;	// ÈôÒªÀ©Õ¹³É¶àÎ¬Êı×é£¬Ó¦¸ÃÓÃÖ¸Õë
-	long size;			// µ¥Î»ÊÇ 32 bit
-	long level;
-} TypeRecord;			// ÊÇ·ñÓĞ level £¨ÀàĞÍ¶¨ÒåµÄ×÷ÓÃÓò£©£¿
+  char name[al + 1];
+  DopeVec dope_vec; // è‹¥è¦æ‰©å±•æˆå¤šç»´æ•°ç»„ï¼Œåº”è¯¥ç”¨æŒ‡é’ˆ
+  long size;        // å•ä½æ˜¯ 32 bit
+  long level;
+} TypeRecord; // æ˜¯å¦æœ‰ level ï¼ˆç±»å‹å®šä¹‰çš„ä½œç”¨åŸŸï¼‰ï¼Ÿ
 
-TypeRecord type_table[txmax + 1];	// 0ºÅ×÷Ë³Ğò²éÕÒÊ±µÄÉÚ±ø
-long type_tx;	// ·ÇÏÂÒ»Î»ÖÃ
+TypeRecord type_table[txmax + 1]; // 0å·ä½œé¡ºåºæŸ¥æ‰¾æ—¶çš„å“¨å…µ
+long type_tx;                     // éä¸‹ä¸€ä½ç½®
 
-#define INTEGER	(type_table + 1)
-#define REAL	(type_table + 2)
-#define BOOLEAN	(type_table + 3)
+#define INTEGER (type_table + 1)
+#define REAL (type_table + 2)
+#define BOOLEAN (type_table + 3)
 
 typedef struct Record {
-	char name[al+1];
-	enum object kind;
-	DataType type;
-	long val;
-	long level;
-	long addr;
-	struct Record *para_link;	// ¶ÔÓÚ´ø²ÎµÄº¯ÊıÃû£¬¸ÃÓòÖ¸ÏòµÚÒ»¸ö²ÎÊı£»¶ÔÓÚĞÎ²Î£¬¸ÃÓòÖ¸ÏòÏÂÒ»¸ö²ÎÊı£¨Ä©²ÎÊı¸ÃÓòÎª NULL£©
-	long para_num;
+  char name[al + 1];
+  enum object kind;
+  DataType type;
+  long val;
+  long level;
+  long addr;
+  struct Record *
+      para_link; // å¯¹äºå¸¦å‚çš„å‡½æ•°åï¼Œè¯¥åŸŸæŒ‡å‘ç¬¬ä¸€ä¸ªå‚æ•°ï¼›å¯¹äºå½¢å‚ï¼Œè¯¥åŸŸæŒ‡å‘ä¸‹ä¸€ä¸ªå‚æ•°ï¼ˆæœ«å‚æ•°è¯¥åŸŸä¸º
+                 // NULLï¼‰
+  long para_num;
 } Record;
-Record table[txmax + 1];	// symbol table(0ºÅÎ»ÖÃ×÷Îª position() ÖĞË³Ğò²éÕÒµÄÉÚ±ø)
+Record
+    table[txmax + 1]; // symbol table(0å·ä½ç½®ä½œä¸º position() ä¸­é¡ºåºæŸ¥æ‰¾çš„å“¨å…µ)
 
 char infilename[80];
-FILE* infile;
+FILE *infile;
 
 // the following variables for block
-long lev;		// current depth of block nesting
-long tx;		// current table index(·ÇÏÂÒ»Î»ÖÃ)
+long lev; // current depth of block nesting
+long tx;  // current table index(éä¸‹ä¸€ä½ç½®)
 
 // the following array space for interpreter
 #define stacksize 50000
-long s[stacksize];	// datastore
+long s[stacksize]; // datastore
 
 typedef struct BreakNode {
-	long code_loc;
-	struct BreakNode *next;
+  long code_loc;
+  struct BreakNode *next;
 } BreakNode;
 
 long g_loop_depth = 0;
