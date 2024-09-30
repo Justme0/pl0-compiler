@@ -1,11 +1,11 @@
 // pl/0 compiler with code generation
 #define _CRT_SECURE_NO_WARNINGS
-#define NDEBUG
+// #define NDEBUG
+#include "pl0.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include "pl0.h"
 
 long g_line_num = 0;
 
@@ -13,24 +13,27 @@ void error(long n) {
   long i;
 
   printf("line %ld:\n", g_line_num);
-  for (i = 1; i < ll; ++i) { // print err line in src code
+  assert(charCnt >= 1);
+  // printf("charCnt=%d.\n", charCnt);
+  for (i = 1; i < ll; ++i) {  // print err line in src code
     printf("%c", line[i]);
   }
   printf("\n");
 
-  //	printf(" ****");
-  //	for (i = 1; i<=cc-1; i++) {	// print position of err
-  //		printf(" ");
-  //	}
-  for (i = 0; i < cc - 2; i++) { // print position of err
-    printf(" ");
+  // Print charCnt-2 char firstly.
+  for (i = 1; i <= charCnt - 2; ++i) {  // print position of err
+    if (line[i] == '\t') {
+      printf("\t");
+    } else {
+      printf(" ");
+    }
   }
   printf("^%2ld\n", n);
   err++;
 }
 
 void getch() {
-  if (cc == ll) {
+  if (charCnt == ll) {
     if (feof(infile)) {
       printf("************************************\n");
       printf("      program incomplete\n");
@@ -39,35 +42,38 @@ void getch() {
       exit(1);
     }
     ll = 0;
-    cc = 0;
+    charCnt = 0;
     //	printf("%5ld ", cx);
-    while ((!feof(infile)) && ((ch = (char)(getc(infile))) != '\n')) {
+    while (!feof(infile) && (ch = (char)(getc(infile))) != '\n' && ch != '\r') {
       // printf("%c",ch);
       ++ll;
       line[ll] = ch;
     }
+    if (ch == '\r') {
+      getc(infile);  // usually '\n'
+    }
     // printf("\n");
     ++ll;
-    line[ll] =
-        ' '; // 将每一行最后的'\n'换为' ', line[0] 不放字符，line[ll] 放空格
+    // 将每一行最后的'\n'换为' ', line[0] 不放字符，line[ll] 放空格
+    line[ll] = ' ';
     ++g_line_num;
   }
   assert(line[0] == '\0' && line[ll] == ' ');
-  ++cc;
-  ch = line[cc];
+  ++charCnt;
+  ch = line[charCnt];
 }
 
 /*
  ** 为区别实数 0.5 和数组下标界 0..5，必须向前查看两个字符
- ** 返回前面第二个字符是不是'.'(不影响 cc)
+ ** 返回前面第二个字符是不是'.'(不影响 charCnt)
  */
 long next_is_period() {
-  assert(line[cc] == '.');
-  if (cc == ll) {
+  assert(line[charCnt] == '.');
+  if (charCnt == ll) {
     return 0;
   }
-  assert((cc + 1) <= ll);
-  return line[cc + 1] == '.';
+  assert((charCnt + 1) <= ll);
+  return line[charCnt + 1] == '.';
 }
 
 /*
@@ -78,8 +84,8 @@ long is_arr(TypeRecord const *const type) {
   if (type != NULL) {
     assert(type->dope_vec.elem_type != type_table);
   }
-  assert(type_table < type &&
-         type <= type_table + type_tx); // 类型名未定义，外部应检测过
+  // 类型名未定义，外部应检测过
+  assert(type_table < type && type <= type_table + type_tx);
   return type != NULL && type->dope_vec.elem_type != NULL;
 }
 
@@ -91,9 +97,9 @@ void free_para_link(Record *begin, Record *end) {
   for (; begin != end; ++begin) {
     if ((begin->kind == PROC || begin->kind == FUNC) &&
         begin->para_link != NULL) {
-      Record *p = begin->para_link; // p 指向第一个参数，begin
-                                    // 指向链表的头结点（头结点非动态生成）
-      Record *pre = NULL;           // 记住前一个结点，用于释放
+      Record *p = begin->para_link;  // p 指向第一个参数，begin
+                                     // 指向链表的头结点（头结点非动态生成）
+      Record *pre = NULL;            // 记住前一个结点，用于释放
       assert(begin->para_num > 0);
       for (;;) {
         if (p->para_link == NULL) {
@@ -156,31 +162,30 @@ BreakNode *list_cat(BreakNode *const dst, BreakNode *const src) {
  */
 DataType getsym() {
   long i, j, k;
-  float real_num = 0; // 32位，须与 num 类型、运行栈类型大小相等
-  float weight = 0;   // 用于计算实数的小数部分
-  DataType sym_type =
-      NULL; // 当 sym 是 number 时区别整数与实数，其他符号则返回为 NULL
+  float real_num = 0;  // 32位，须与 num 类型、运行栈类型大小相等
+  float weight = 0;    // 用于计算实数的小数部分
+  // 当 sym 是 number 时区别整数与实数，其他符号则返回为 NULL
+  DataType sym_type = NULL;
 
 LABEL_INIT:
   while (ch == ' ' || ch == '\t') {
     getch();
   }
-  if (isalpha(ch)) { // identified or reserved
+  if (isalpha(ch)) {  // identified or reserved
     assert(a[al] == '\0');
-    k = 0; // k 记录标识符的长度
+    k = 0;  // k 记录标识符的长度
     do {
       if (k < al) {
-        a[k] = ch; // 若标识符长度大于al，后面的将丢失
+        a[k] = ch;  // 若标识符长度大于al，后面的将丢失
         ++k;
       } else {
-        error(54); // 标识符太长
+        error(54);  // 标识符太长
       }
       getch();
     } while (isalpha(ch) || isdigit(ch));
     if (k >= kk) {
-      kk =
-          k; // kk
-             // 是全局变量，初始是al（标识符最大长度），若执行到这里，说明此次标识符长度>=上次标识符长度
+      // kk是全局变量，初始是al（标识符最大长度），若执行到这里，说明此次标识符长度>=上次标识符长度
+      kk = k;
     } else {
       do {
         --kk;
@@ -190,7 +195,7 @@ LABEL_INIT:
     strcpy(g_id, a);
     i = 0;
     j = norw - 1;
-    do { // 二分查找 id 是否为保留字，可用 bsearch()
+    do {  // 二分查找 id 是否为保留字，可用 bsearch()
       k = (i + j) / 2;
       if (strcmp(g_id, word[k]) <= 0) {
         j = k - 1;
@@ -204,7 +209,7 @@ LABEL_INIT:
     } else {
       sym = ident;
     }
-  } else if (isdigit(ch)) { // number
+  } else if (isdigit(ch)) {  // number
     k = 0;
     g_num = 0;
     sym = number;
@@ -226,8 +231,9 @@ LABEL_INIT:
           weight *= 10;
           getch();
         } while (isdigit(ch));
-        assert(sizeof(long) == sizeof(float));
-        memcpy(&g_num, &real_num, sizeof(long));
+        static_assert(sizeof(long) >= sizeof(float),
+                      "will copy between long and float");
+        memcpy(&g_num, &real_num, sizeof(float));
       } else {
         error(36);
       }
@@ -272,7 +278,7 @@ LABEL_INIT:
     LABEL_COMMENT2:
       getch();
       if (ch == '/') {
-        getch(); // 注意在跳转之前 getch()
+        getch();  // 注意在跳转之前 getch()
         goto LABEL_INIT;
       } else if (ch == '*') {
         goto LABEL_COMMENT2;
@@ -280,7 +286,7 @@ LABEL_INIT:
         goto LABEL_COMMENT1;
       }
     } else {
-      sym = slash; // 出现斜杠后，已经 getch()，这里不能再 getch()
+      sym = slash;  // 出现斜杠后，已经 getch()，这里不能再 getch()
     }
   } else if (ch == '.') {
     getch();
@@ -335,11 +341,11 @@ void test(SymbolType s1, SymbolType s2, long n) {
 /*
  ** 返回相应表中的下标位置，若找不到 id 则返回0
  */
-long position(void *which_table, char *id) { // find identifier id in table
+long position(void *which_table, char *id) {  // find identifier id in table
   long i = 0;
 
   if (which_table == (void *)table) {
-    strcpy(table[0].name, id); // 哨兵
+    strcpy(table[0].name, id);  // 哨兵
     i = tx;
     while (strcmp(table[i].name, id) != 0) {
       --i;
@@ -358,8 +364,8 @@ long position(void *which_table, char *id) { // find identifier id in table
   return i;
 }
 
-void enter(char const *const sym_id, enum object k,
-           DataType down_type) { // enter object into table
+// enter object into table
+void enter(char const *const sym_id, enum object k, DataType down_type) {
   long i;
   TypeRecord *ptrcd = NULL;
   // 同一层中不允许重定义，从1到 tx 的各符号的 level 是递增的
@@ -377,68 +383,71 @@ void enter(char const *const sym_id, enum object k,
   }
 
   switch (k) {
-  case CONSTANT:
-    if (g_num > amax) {
-      error(31);
-      g_num = 0;
-    }
-    strcpy(table[++tx].name, sym_id);
-    table[tx].kind = k;
-    table[tx].val = g_num;
-    table[tx].type = down_type;
-    table[tx].para_link = NULL;
-    table[tx].para_num = 0;
-    break;
+    case CONSTANT:
+      if (g_num > amax) {
+        error(31);
+        g_num = 0;
+      }
+      strcpy(table[++tx].name, sym_id);
+      table[tx].kind = k;
+      table[tx].val = g_num;
+      table[tx].type = down_type;
+      table[tx].para_link = NULL;
+      table[tx].para_num = 0;
+      break;
 
-  case VARIABLE:
-    // var a, b: real; 这种声明只有当 real 出现时才知道 a, b
-    // 的类型，所以类型、地址和 dx 在外面填写 TODO:
-    strcpy(table[++tx].name, sym_id);
-    table[tx].kind = k;
-    table[tx].level = lev;
-    table[tx].para_link = NULL;
-    table[tx].para_num = 0;
-    break;
+    case VARIABLE:
+      // var a, b: real; 这种声明只有当 real 出现时才知道 a, b
+      // 的类型，所以类型、地址和 dx 在外面填写 TODO:
+      strcpy(table[++tx].name, sym_id);
+      table[tx].kind = k;
+      table[tx].level = lev;
+      table[tx].para_link = NULL;
+      table[tx].para_num = 0;
+      break;
 
-  case PROC:
-    strcpy(table[++tx].name, sym_id);
-    table[tx].kind = k;
-    table[tx].level = lev;
-    table[tx].para_link = NULL;
-    table[tx].para_num = 0;
-    break;
+    case PROC:
+      strcpy(table[++tx].name, sym_id);
+      table[tx].kind = k;
+      table[tx].level = lev;
+      table[tx].para_link = NULL;
+      table[tx].para_num = 0;
+      break;
 
-  case FUNC:
-    strcpy(table[++tx].name, sym_id);
-    table[tx].kind = k;
-    table[tx].level = lev;
-    table[tx].para_link = NULL;
-    table[tx].para_num = 0;
-    // 类型等扫描到函数头的结尾才知道，在外面的 func_dec() 中回填
-    break;
+    case FUNC:
+      strcpy(table[++tx].name, sym_id);
+      table[tx].kind = k;
+      table[tx].level = lev;
+      table[tx].para_link = NULL;
+      table[tx].para_num = 0;
+      // 类型等扫描到函数头的结尾才知道，在外面的 func_dec() 中回填
+      break;
 
-  case TAG:
-    strcpy(type_table[++type_tx].name, sym_id);
-    type_table[type_tx].dope_vec =
-        g_dope_vec; // g_dope_vec 的上下界在 type_expr() 中获得
-    type_table[type_tx].dope_vec.n = type_table[type_tx].dope_vec.upper_bound -
-                                     type_table[type_tx].dope_vec.lower_bound;
-    type_table[type_tx].size = type_table[type_tx].dope_vec.elem_type->size *
-                               type_table[type_tx].dope_vec.n;
-    type_table[type_tx].level = lev;
-    for (ptrcd = &type_table[type_tx],
-        ptrcd->dope_vec.const_offset = ptrcd->dope_vec.lower_bound;
-         is_arr(ptrcd->dope_vec.elem_type); ptrcd = ptrcd->dope_vec.elem_type) {
-      ptrcd->dope_vec.const_offset =
-          ptrcd->dope_vec.const_offset * ptrcd->dope_vec.elem_type->dope_vec.n +
-          ptrcd->dope_vec.elem_type->dope_vec.lower_bound;
-    }
+    case TAG:
+      strcpy(type_table[++type_tx].name, sym_id);
+      // g_dope_vec 的上下界在 type_expr() 中获得
+      type_table[type_tx].dope_vec = g_dope_vec;
+      type_table[type_tx].dope_vec.n =
+          type_table[type_tx].dope_vec.upper_bound -
+          type_table[type_tx].dope_vec.lower_bound;
+      type_table[type_tx].size = type_table[type_tx].dope_vec.elem_type->size *
+                                 type_table[type_tx].dope_vec.n;
+      type_table[type_tx].level = lev;
+      for (ptrcd = &type_table[type_tx],
+          ptrcd->dope_vec.const_offset = ptrcd->dope_vec.lower_bound;
+           is_arr(ptrcd->dope_vec.elem_type);
+           ptrcd = ptrcd->dope_vec.elem_type) {
+        ptrcd->dope_vec.const_offset =
+            ptrcd->dope_vec.const_offset *
+                ptrcd->dope_vec.elem_type->dope_vec.n +
+            ptrcd->dope_vec.elem_type->dope_vec.lower_bound;
+      }
 
-    break;
+      break;
 
-  default:
-    assert(!"未定义的类型");
-    break;
+    default:
+      assert(!"未定义的类型");
+      break;
   }
 }
 
@@ -468,14 +477,14 @@ void constdeclaration() {
 
 void vardeclaration() {
   if (sym == ident) {
-    enter(g_id, VARIABLE, NULL); // 类型在 block() 中加入符号表
+    enter(g_id, VARIABLE, NULL);  // 类型在 block() 中加入符号表
     getsym();
   } else {
     error(4);
   }
 }
 
-void list_code(long cx0) { // list code generated for this block
+void list_code(long cx0) {  // list code generated for this block
   long i;
 
   for (i = cx0; i < cx; i++) {
@@ -510,12 +519,12 @@ DataType ident_ref(SymbolType fsys, Record **pprcd) {
   ident_ref_type = (*pprcd)->type;
   getsym();
   if (sym != lbracket) {
-    return ident_ref_type; // 非数组则直接返回
+    return ident_ref_type;  // 非数组则直接返回
   }
   do {
     ++dim_num;
     if (!is_arr(ident_ref_type)) {
-      error(56); // 有左括号但不是数组
+      error(56);  // 有左括号但不是数组
       return NULL;
     }
 
@@ -524,7 +533,7 @@ DataType ident_ref(SymbolType fsys, Record **pprcd) {
       gen(lit, 0, (is_arr(ident_ref_type) ? ident_ref_type->dope_vec.n : 1));
       gen(opr, 0, 4);
     }
-    subscript_type = expr(fsys | rbracket, sym_type); // 将下标压入栈
+    subscript_type = expr(fsys | rbracket, sym_type);  // 将下标压入栈
     if (subscript_type == INTEGER) {
       if (sym == rbracket) {
         gen(lit, 0, ident_ref_type->dope_vec.lower_bound);
@@ -566,7 +575,7 @@ DataType factor(SymbolType fsys, DataType down_type) {
   DataType factor_type = NULL;
 
   test(facbegsys, fsys, 24);
-  while (sym & facbegsys) { // 为什么要循环？
+  while (sym & facbegsys) {  // 为什么要循环？
     if (sym == ident) {
       prcd = &table[position(table, g_id)];
       if (table == prcd) {
@@ -580,10 +589,10 @@ DataType factor(SymbolType fsys, DataType down_type) {
         if (lparen == sym) {
           sym_type = getsym();
           actual_para_l(fsys | rparen, sym_type, prcd);
-          gen(rva, 0, prcd->para_num); // 逆转实参，模拟实现参数逆序压栈
+          gen(rva, 0, prcd->para_num);  // 逆转实参，模拟实现参数逆序压栈
           gen(cal, lev - prcd->level, prcd->addr);
-          gen(ppa, 0,
-              prcd->para_num); // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
+          // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
+          gen(ppa, 0, prcd->para_num);
           if (rparen == sym) {
             getsym();
           } else {
@@ -599,34 +608,34 @@ DataType factor(SymbolType fsys, DataType down_type) {
         if (factor_type != NULL && factor_type != type_table && prcd != NULL &&
             prcd != table) {
           switch (prcd->kind) {
-          case CONSTANT:
-            gen(lit, 0, prcd->val);
-            break;
+            case CONSTANT:
+              gen(lit, 0, prcd->val);
+              break;
 
-          case VARIABLE:
-            if (is_arr(prcd->type)) {
-              gen(lda, lev - prcd->level,
-                  prcd->addr - prcd->type->dope_vec.const_offset);
-            } else {
-              gen(lod, lev - prcd->level, prcd->addr);
-            }
-            break;
+            case VARIABLE:
+              if (is_arr(prcd->type)) {
+                gen(lda, lev - prcd->level,
+                    prcd->addr - prcd->type->dope_vec.const_offset);
+              } else {
+                gen(lod, lev - prcd->level, prcd->addr);
+              }
+              break;
 
-          case PROC:
-            error(21);
-            break;
+            case PROC:
+              error(21);
+              break;
 
-          default:
-            assert(!"未定义的类型");
-            break;
+            default:
+              assert(!"未定义的类型");
+              break;
           }
         } else {
           error(57);
         }
       }
     } else if (sym == number) {
-      factor_type = down_type; // 在 factor() 外面 getsym() 得到的 sym(number)
-                               // 的类型是 down_type
+      factor_type = down_type;  // 在 factor() 外面 getsym() 得到的 sym(number)
+                                // 的类型是 down_type
       if (g_num > amax) {
         error(31);
         g_num = 0;
@@ -648,7 +657,7 @@ DataType factor(SymbolType fsys, DataType down_type) {
       factor_type = factor(fsys, sym_type);
       if (factor_type != BOOLEAN) {
         error(44);
-        factor_type = BOOLEAN; // 这样补救是否合适？
+        factor_type = BOOLEAN;  // 这样补救是否合适？
       }
       gen(opr, 0, 34);
     } else if (sym == oddsym) {
@@ -680,7 +689,7 @@ DataType factor(SymbolType fsys, DataType down_type) {
     } else {
       assert(!"非法的 factor 开始符");
     }
-    test(fsys, lparen, 23); // 补救集不是 facbegsys?
+    test(fsys, lparen, 23);  // 补救集不是 facbegsys?
   }
 
   //	assert(factor_type != NULL);
@@ -767,7 +776,7 @@ DataType term(SymbolType fsys, DataType down_type) {
  */
 DataType simp_exp(SymbolType fsys, DataType down_type) {
   SymbolType addop = 0;
-  DataType sym_type = NULL; // 记录局部的 getsym() 的返回值，调用子过程时传下去
+  DataType sym_type = NULL;  // 记录局部的 getsym() 的返回值，调用子过程时传下去
   DataType term_type1 = NULL;
   DataType term_type2 = NULL;
 
@@ -784,7 +793,7 @@ DataType simp_exp(SymbolType fsys, DataType down_type) {
   while (sym == plus || sym == minus || sym == orsym) {
     long cx_temp = cx;
     if (sym == orsym) {
-      gen(jp1, 0, 0); // 短路
+      gen(jp1, 0, 0);  // 短路
     }
     addop = sym;
     sym_type = getsym();
@@ -807,7 +816,7 @@ DataType simp_exp(SymbolType fsys, DataType down_type) {
         error(41);
       }
     } else if (term_type1 == INTEGER && term_type2 == REAL) {
-      gen(opr, 0, 31); // 此时次栈顶是INTEGER,栈顶是REAL
+      gen(opr, 0, 31);  // 此时次栈顶是INTEGER,栈顶是REAL
       if (addop == plus) {
         gen(opr, 0, 19);
       } else if (addop == minus) {
@@ -828,7 +837,7 @@ DataType simp_exp(SymbolType fsys, DataType down_type) {
     } else if (term_type1 == BOOLEAN && term_type2 == BOOLEAN) {
       if (addop == orsym) {
         gen(opr, 0, 32);
-        code[cx_temp].a = cx; // 回填短路
+        code[cx_temp].a = cx;  // 回填短路
       } else {
         error(41);
       }
@@ -837,7 +846,7 @@ DataType simp_exp(SymbolType fsys, DataType down_type) {
     }
   }
 
-  return term_type1; // 表示式的类型就是最后的项的类型
+  return term_type1;  // 表示式的类型就是最后的项的类型
 }
 
 DataType expr(SymbolType fsys, DataType down_type) {
@@ -853,95 +862,95 @@ DataType expr(SymbolType fsys, DataType down_type) {
     expr_type2 = simp_exp(fsys, sym_type);
 
     switch (relop) {
-    case eql:
-      if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-      } else if (expr_type1 != expr_type2) {
-        error(41);
-      }
-      gen(opr, 0, 8);
-      break;
+      case eql:
+        if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+        } else if (expr_type1 != expr_type2) {
+          error(41);
+        }
+        gen(opr, 0, 8);
+        break;
 
-    case neq:
-      if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-      } else if (expr_type1 != expr_type2) {
-        error(41);
-      }
-      gen(opr, 0, 9);
-      break;
+      case neq:
+        if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+        } else if (expr_type1 != expr_type2) {
+          error(41);
+        }
+        gen(opr, 0, 9);
+        break;
 
-    case lss:
-      if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
-        gen(opr, 0, 10);
-      } else if (expr_type1 == REAL && expr_type1 == REAL) {
-        gen(opr, 0, 26);
-      } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-        gen(opr, 0, 26);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-        gen(opr, 0, 26);
-      } else {
-        error(41); // 不允许 false < true 这样的表达式
-      }
-      break;
+      case lss:
+        if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
+          gen(opr, 0, 10);
+        } else if (expr_type1 == REAL && expr_type1 == REAL) {
+          gen(opr, 0, 26);
+        } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+          gen(opr, 0, 26);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+          gen(opr, 0, 26);
+        } else {
+          error(41);  // 不允许 false < true 这样的表达式
+        }
+        break;
 
-    case geq:
-      if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
-        gen(opr, 0, 11);
-      } else if (expr_type1 == REAL && expr_type2 == REAL) {
-        gen(opr, 0, 27);
-      } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-        gen(opr, 0, 27);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-        gen(opr, 0, 27);
-      } else {
-        error(41);
-      }
-      break;
+      case geq:
+        if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
+          gen(opr, 0, 11);
+        } else if (expr_type1 == REAL && expr_type2 == REAL) {
+          gen(opr, 0, 27);
+        } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+          gen(opr, 0, 27);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+          gen(opr, 0, 27);
+        } else {
+          error(41);
+        }
+        break;
 
-    case gtr:
-      if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
-        gen(opr, 0, 12);
-      } else if (expr_type1 == REAL && expr_type2 == REAL) {
-        gen(opr, 0, 28);
-      } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-        gen(opr, 0, 28);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-        gen(opr, 0, 28);
-      } else {
-        error(41);
-      }
-      break;
+      case gtr:
+        if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
+          gen(opr, 0, 12);
+        } else if (expr_type1 == REAL && expr_type2 == REAL) {
+          gen(opr, 0, 28);
+        } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+          gen(opr, 0, 28);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+          gen(opr, 0, 28);
+        } else {
+          error(41);
+        }
+        break;
 
-    case leq:
-      if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
-        gen(opr, 0, 13);
-      } else if (expr_type1 == REAL && expr_type2 == REAL) {
-        gen(opr, 0, 29);
-      } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
-        gen(opr, 0, 31);
-        gen(opr, 0, 29);
-      } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
-        gen(opr, 0, 30);
-        gen(opr, 0, 29);
-      } else {
-        error(41);
-      }
-      break;
+      case leq:
+        if (expr_type1 == INTEGER && expr_type2 == INTEGER) {
+          gen(opr, 0, 13);
+        } else if (expr_type1 == REAL && expr_type2 == REAL) {
+          gen(opr, 0, 29);
+        } else if (expr_type1 == INTEGER && expr_type2 == REAL) {
+          gen(opr, 0, 31);
+          gen(opr, 0, 29);
+        } else if (expr_type1 == REAL && expr_type2 == INTEGER) {
+          gen(opr, 0, 30);
+          gen(opr, 0, 29);
+        } else {
+          error(41);
+        }
+        break;
 
-    default:
-      assert(!"未定义的逻辑操作");
-      break;
+      default:
+        assert(!"未定义的逻辑操作");
+        break;
     }
     expr_type1 = BOOLEAN;
   }
@@ -958,7 +967,7 @@ void actual_para_l(SymbolType fsys, DataType down_type, Record const *prcd) {
   for (;;) {
     DataType arg_type = expr(fsys | comma, down_type);
     if (prcd->para_link == NULL) {
-      error(60); // 实参数目太多
+      error(60);  // 实参数目太多
     } else {
       prcd = prcd->para_link;
       if (prcd->type == REAL && arg_type == INTEGER) {
@@ -973,7 +982,7 @@ void actual_para_l(SymbolType fsys, DataType down_type, Record const *prcd) {
       getsym();
     } else {
       if (NULL != prcd->para_link) {
-        error(61); // 实参数目太少
+        error(61);  // 实参数目太少
       }
       break;
     }
@@ -1011,8 +1020,8 @@ BreakNode *statement(SymbolType fsys) {
       error(39);
     }
     if (prcd->kind == FUNC) {
-      gen(opr, 0, 36); // 将返回值存到寄存器中
-      gen(opr, 0, 0);
+      gen(opr, 0, 36);  // 将返回值存到寄存器中
+      // gen(opr, 0, 0); // not return
     } else if (is_arr(prcd->type)) {
       // 数组常量部分编译时算好
       gen(sta, lev - prcd->level,
@@ -1027,7 +1036,7 @@ BreakNode *statement(SymbolType fsys) {
     } else {
       // Stmt     -> call ident[(ActParal)]
       // ActParal -> Exp{, Exp}
-      prcd = &table[position(table, g_id)]; // 指向函数名记录
+      prcd = &table[position(table, g_id)];  // 指向函数名记录
       assert(NULL != prcd);
       getsym();
       if (prcd == table) {
@@ -1036,10 +1045,10 @@ BreakNode *statement(SymbolType fsys) {
         if (lparen == sym) {
           sym_type = getsym();
           actual_para_l(fsys | rparen, sym_type, prcd);
-          gen(rva, 0, prcd->para_num); // 逆转实参，模拟实现参数逆序压栈
+          gen(rva, 0, prcd->para_num);  // 逆转实参，模拟实现参数逆序压栈
           gen(cal, lev - prcd->level, prcd->addr);
           gen(ppa, 0,
-              prcd->para_num); // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
+              prcd->para_num);  // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
           if (rparen == sym) {
             getsym();
           } else {
@@ -1054,7 +1063,7 @@ BreakNode *statement(SymbolType fsys) {
     }
   } else if (sym == ifsym) {
     sym_type = getsym();
-    expr_type = expr(fsys | thensym | dosym, sym_type); // why dosym?
+    expr_type = expr(fsys | thensym | dosym, sym_type);  // why dosym?
     if (BOOLEAN != expr_type) {
       error(45);
     }
@@ -1069,12 +1078,12 @@ BreakNode *statement(SymbolType fsys) {
     if (sym == elsesym) {
       BreakNode *pbn2 = NULL;
       getsym();
-      code[cx1].a = cx + 1; // cx 处放 jmp
+      code[cx1].a = cx + 1;  // cx 处放 jmp
       cx1 = cx;
       gen(jmp, 0, 0);
       pbn2 = statement(fsys);
       pbn = list_cat(pbn, pbn2);
-      code[cx1].a = cx; // 前面修改了 cx1
+      code[cx1].a = cx;  // 前面修改了 cx1
     } else {
       code[cx1].a = cx;
     }
@@ -1089,7 +1098,8 @@ BreakNode *statement(SymbolType fsys) {
         error(10);
       }
       pbn2 = statement(fsys | semicolon | endsym);
-      pbn = list_cat(pbn, pbn2); // 将 pbn2 接到 pbn 的尾部，pbn 原来可能是 NULL
+      pbn =
+          list_cat(pbn, pbn2);  // 将 pbn2 接到 pbn 的尾部，pbn 原来可能是 NULL
     }
     if (sym == endsym) {
       getsym();
@@ -1104,7 +1114,7 @@ BreakNode *statement(SymbolType fsys) {
       error(45);
     }
     cx2 = cx;
-    gen(jpc, 0, 0); // cx2 记录了测试条件
+    gen(jpc, 0, 0);  // cx2 记录了测试条件
     if (sym == dosym) {
       getsym();
     } else {
@@ -1113,10 +1123,10 @@ BreakNode *statement(SymbolType fsys) {
     ++g_loop_depth;
     pbn = statement(fsys);
     --g_loop_depth;
-    gen(jmp, 0, cx1); // 跳到测试条件 cx1
-    code[cx2].a = cx; // 若测试条件不满足则跳到 cx(cx 是循环外的第一条指令)
+    gen(jmp, 0, cx1);  // 跳到测试条件 cx1
+    code[cx2].a = cx;  // 若测试条件不满足则跳到 cx(cx 是循环外的第一条指令)
     for (; pbn != NULL; pbn = pbn->next) {
-      code[pbn->code_loc].a = cx; // 回填 break 语句的出口地址
+      code[pbn->code_loc].a = cx;  // 回填 break 语句的出口地址
     }
     free_break_link(pbn);
     pbn = NULL;
@@ -1130,7 +1140,7 @@ BreakNode *statement(SymbolType fsys) {
         // system("pause");
         exit(1);
       }
-      pbn->code_loc = cx; // 记住自己的指令地址，用于循环结束后的回填
+      pbn->code_loc = cx;  // 记住自己的指令地址，用于循环结束后的回填
       pbn->next = NULL;
       gen(jmp, 0, 0);
     }
@@ -1150,7 +1160,7 @@ BreakNode *statement(SymbolType fsys) {
             prcd != NULL && prcd != table) {
           if (prcd->kind == VARIABLE) {
             if (INTEGER == ident_ref_type) {
-              gen(opr, 0, 16); // 输入
+              gen(opr, 0, 16);  // 输入
             } else if (REAL == ident_ref_type) {
               gen(opr, 0, 23);
             } else {
@@ -1160,7 +1170,7 @@ BreakNode *statement(SymbolType fsys) {
               gen(sta, lev - prcd->level,
                   (prcd->addr - prcd->type->dope_vec.const_offset));
             } else {
-              gen(sto, lev - prcd->level, prcd->addr); // 基本类型
+              gen(sto, lev - prcd->level, prcd->addr);  // 基本类型
             }
           } else {
             error(58);
@@ -1171,9 +1181,9 @@ BreakNode *statement(SymbolType fsys) {
       } while (sym == comma);
     }
     if (sym != rparen) {
-      error(33); // if 是否应该写在上面的 else 中？TODO:
+      error(33);  // if 是否应该写在上面的 else 中？TODO:
       while (!(sym & fsys)) {
-        getsym(); // 在这里补救是否合适？下面同理 TODO:
+        getsym();  // 在这里补救是否合适？下面同理 TODO:
       }
     } else {
       getsym();
@@ -1225,30 +1235,31 @@ void list_table(long tx0) {
   for (i = tx0 + 1; i <= tx; ++i) {
     rcd = table[i];
     switch (rcd.kind) {
-    case CONSTANT:
-      printf("%-2ld CONSTANT %s val = %ld type = %s\n", i, rcd.name, rcd.val,
-             rcd.type->name);
-      break;
+      case CONSTANT:
+        printf("%-2ld CONSTANT %s val = %ld type = %s\n", i, rcd.name, rcd.val,
+               rcd.type->name);
+        break;
 
-    case VARIABLE:
-      printf("%-2ld VARIABLE %s lev = %ld addr = %ld type = %s\n", i, rcd.name,
-             rcd.level, rcd.addr, rcd.type->name);
-      break;
+      case VARIABLE:
+        printf("%-2ld VARIABLE %s lev = %ld addr = %ld type = %s\n", i,
+               rcd.name, rcd.level, rcd.addr, rcd.type->name);
+        break;
 
-    case PROC:
-      printf("%-2ld PROC     %s lev = %ld addr = %ld para_num = %ld\n", i,
-             rcd.name, rcd.level, rcd.addr, rcd.para_num);
-      break;
+      case PROC:
+        printf("%-2ld PROC     %s lev = %ld addr = %ld para_num = %ld\n", i,
+               rcd.name, rcd.level, rcd.addr, rcd.para_num);
+        break;
 
-    case FUNC:
-      printf("%-2ld FUNC     %s lev = %ld addr = %ld ret_type = %s para_num = "
-             "%ld\n",
-             i, rcd.name, rcd.level, rcd.addr, rcd.type->name, rcd.para_num);
-      break;
+      case FUNC:
+        printf(
+            "%-2ld FUNC     %s lev = %ld addr = %ld ret_type = %s para_num = "
+            "%ld\n",
+            i, rcd.name, rcd.level, rcd.addr, rcd.type->name, rcd.para_num);
+        break;
 
-    default:
-      assert(!"未定义的类型");
-      break;
+      default:
+        assert(!"未定义的类型");
+        break;
     }
   }
   printf("------------------------------------------------------\n");
@@ -1261,32 +1272,32 @@ DataType sym_to_type(SymbolType sym_type) {
   long i = 0;
 
   switch (sym_type) {
-  case integersym:
-    return type_table + 1;
-    break;
+    case integersym:
+      return type_table + 1;
+      break;
 
-  case realsym:
-    return type_table + 2;
-    break;
+    case realsym:
+      return type_table + 2;
+      break;
 
-  case booleansym:
-    return type_table + 3;
-    break;
+    case booleansym:
+      return type_table + 3;
+      break;
 
-  case ident:
-    for (i = 4; i <= type_tx; ++i) {
-      if (0 == strcmp(type_table[i].name, g_id)) {
-        return type_table + i;
+    case ident:
+      for (i = 4; i <= type_tx; ++i) {
+        if (0 == strcmp(type_table[i].name, g_id)) {
+          return type_table + i;
+        }
       }
-    }
-    assert(!"未定义的类型");
-    return NULL;
-    break;
+      assert(!"未定义的类型");
+      return NULL;
+      break;
 
-  default:
-    assert(!"未定义的类型");
-    return NULL;
-    break;
+    default:
+      assert(!"未定义的类型");
+      return NULL;
+      break;
   }
 }
 
@@ -1364,14 +1375,14 @@ void type_expr() {
 void type_define() {
   if (sym == ident) {
     char temp_tag[al + 1];
-    strcpy(temp_tag, g_id); // 先保存用户定义的类型名
+    strcpy(temp_tag, g_id);  // 先保存用户定义的类型名
     getsym();
     if (sym == eql || sym == becomes) {
       if (sym == becomes) {
         error(1);
       }
       getsym();
-      type_expr(); // 这里仅限数组，将修改 g_dope_vec。若要扩展，应重构
+      type_expr();  // 这里仅限数组，将修改 g_dope_vec。若要扩展，应重构
       enter(temp_tag, TAG, NULL);
       if (sym == semicolon) {
         getsym();
@@ -1390,22 +1401,22 @@ void type_define() {
  ** ForParal -> ident: Type{; ident: Type}
  */
 void formal_para_l() {
-  Record *prcd = &table[tx]; // prcd 初始指向函数名记录，用于操纵形参链
+  Record *prcd = &table[tx];  // prcd 初始指向函数名记录，用于操纵形参链
   Record *const pfunc = prcd;
   pfunc->para_num = 0;
   assert(NULL == prcd->para_link);
 
   for (;;) {
-    vardeclaration(); // 使 ++tx
+    vardeclaration();  // 使 ++tx
     if (sym == colon) {
       getsym();
     } else {
-      error(37); // 是否应该补救？
+      error(37);  // 是否应该补救？
     }
     if (sym == integersym || sym == realsym || sym == booleansym) {
       table[tx].type = sym_to_type(sym);
       ++(pfunc->para_num);
-      table[tx].addr = -(pfunc->para_num); // 实参逆序压栈
+      table[tx].addr = -(pfunc->para_num);  // 实参逆序压栈
       // 			++dx;	// 参数压栈是 caller 的责任，不占
       // callee 的空间
       getsym();
@@ -1417,7 +1428,7 @@ void formal_para_l() {
         // system("pause");
         exit(1);
       }
-      *(prcd->para_link) = table[tx]; // 浅拷贝
+      *(prcd->para_link) = table[tx];  // 浅拷贝
       prcd = prcd->para_link;
       assert(prcd->para_link == NULL);
       prcd->para_link = NULL;
@@ -1443,7 +1454,7 @@ void block(SymbolType fsys, long tx0);
  */
 void func_dec(SymbolType fsys) {
   long tmp_tx =
-      0; // save current table index before processing nested procedures
+      0;  // save current table index before processing nested procedures
   long is_func = 0;
   assert(sym == procsym || sym == funcsym);
   is_func = (sym == funcsym);
@@ -1454,12 +1465,12 @@ void func_dec(SymbolType fsys) {
   } else {
     error(4);
   }
-  ++lev; // 将该过程的形参当成其局部变量
+  ++lev;  // 将该过程的形参当成其局部变量
   tmp_tx = tx;
-  table[tx].addr = cx; // 保存 jmp 的 cx
+  table[tx].addr = cx;  // 保存 jmp 的 cx
   if (sym == lparen) {
     getsym();
-    formal_para_l(); // 将改变 tx
+    formal_para_l();  // 将改变 tx
     if (sym == rparen) {
       getsym();
     } else {
@@ -1488,7 +1499,7 @@ void func_dec(SymbolType fsys) {
   }
   block(fsys | semicolon, tmp_tx);
   free_para_link(table + tmp_tx + 1, table + tx + 1);
-  tx = tmp_tx; // 形参在符号表中也将销毁，但保存在形参链中
+  tx = tmp_tx;  // 形参在符号表中也将销毁，但保存在形参链中
   --lev;
   if (sym == semicolon) {
     getsym();
@@ -1500,7 +1511,7 @@ void func_dec(SymbolType fsys) {
 
 void block(SymbolType fsys, long tx0) {
   BreakNode *pbn = NULL;
-  long cx0; // initial code index
+  // long cx0;  // initial code index
 
   long dx = 3;
   gen(jmp, 0, 0);
@@ -1521,7 +1532,7 @@ void block(SymbolType fsys, long tx0) {
         } else {
           error(5);
         }
-      } while (sym == ident); // 可定义为 const a = 1, b = 2; c = 3;
+      } while (sym == ident);  // 可定义为 const a = 1, b = 2; c = 3;
     }
     if (sym == typesym) {
       getsym();
@@ -1530,10 +1541,10 @@ void block(SymbolType fsys, long tx0) {
       } while (sym == ident);
     }
     if (sym == varsym) {
-      getsym(); // sym 应是 ident
+      getsym();  // sym 应是 ident
       do {
-        long tx1 =
-            tx + 1; // tx1 指向将要定义的变量在符号表中的位置，用于反填类型信息
+        // tx1 指向将要定义的变量在符号表中的位置，用于反填类型信息
+        long tx1 = tx + 1;
         vardeclaration();
         while (sym == comma) {
           getsym();
@@ -1542,14 +1553,14 @@ void block(SymbolType fsys, long tx0) {
         if (sym == colon) {
           getsym();
         } else {
-          error(37); // 是否应该补救？
+          error(37);  // 是否应该补救？
         }
-        if (sym & (integersym | realsym | booleansym |
-                   ident)) { // 应检查 ident 是否为数组类型 TODO:
+        // 应检查 ident 是否为数组类型 TODO:
+        if (sym & (integersym | realsym | booleansym | ident)) {
           long i;
           for (i = tx1; i <= tx; ++i) {
-            table[i].type =
-                sym_to_type(sym); // 类型最好加在 vardeclaration() 中，待重构
+            // 类型最好加在 vardeclaration() 中，待重构
+            table[i].type = sym_to_type(sym);
             table[i].addr = dx;
             dx += table[i].type->size;
             if (NULL == table[i].type) {
@@ -1574,24 +1585,24 @@ void block(SymbolType fsys, long tx0) {
   } while (sym & declbegsys);
 
   assert(code[table[tx0].addr].f == jmp);
-  code[table[tx0].addr].a = cx; // 开始生成当前过程代码
-  table[tx0].addr = cx;         // 反填过程体的入口地址
-  cx0 = cx;
-  gen(Int, 0, dx); // 分配内存数据段，3个单元加局部变量个数
+  code[table[tx0].addr].a = cx;  // 开始生成当前过程代码
+  table[tx0].addr = cx;          // 反填过程体的入口地址
+  // cx0 = cx;
+  gen(Int, 0, dx);  // 分配内存数据段，3个单元加局部变量个数
   //	list_table(tx0);	// 输出符号表 (tx0, tx]
-  pbn = statement(fsys | semicolon |
-                  endsym); // 每个后跟集都包含上层后跟集，以便补救
+  // 每个后跟集都包含上层后跟集，以便补救
+  pbn = statement(fsys | semicolon | endsym);
   if (NULL != pbn) {
-    error(63); // break 语句没有处于任何 while 语句中
+    error(63);  // break 语句没有处于任何 while 语句中
   }
-  gen(opr, 0, 0); // 退出过程时释放内存数据段
+  gen(opr, 0, 0);  // 退出过程时释放内存数据段
   test(fsys, 0, 8);
   //	list_code(cx0);		// [cx0, cx)
 }
 
 long base(long b, long l) {
   long b1 = b;
-  while (l > 0) { // find base l levels down
+  while (l > 0) {  // find base l levels down
     b1 = s[b1];
     --l;
   }
@@ -1599,20 +1610,21 @@ long base(long b, long l) {
 }
 
 void interpret() {
-  long pre_p = 0;   // 记录 pc
-  long p = 0;       // program count
-  long b = 1;       // base register
-  long t = 0;       // topstack register(指向栈顶，非下一位置，s[0]不用)
-  instruction i;    // instruction register	float fa = 0;	// 为操作浮点数
-  long registr = 0; // 放函数返回值
+  long pre_p = 0;    // 记录 pc
+  long p = 0;        // program count
+  long b = 1;        // base register
+  long t = 0;        // topstack register(指向栈顶，非下一位置，s[0]不用)
+  instruction i;     // instruction register	float fa = 0;	// 为操作浮点数
+  long registr = 0;  // 放函数返回值
 
-  long first = 0; // for reverse arguments
+  long first = 0;  // for reverse arguments
   long last = 0;
 
   float fa = .0f;
   float fb = .0f;
-  size_t fsize = sizeof(float);
-  assert(sizeof(long) == sizeof(float));
+  const size_t fsize = sizeof(float);
+  static_assert(sizeof(long) >= sizeof(float),
+                "will copy between long and float");
 
   // printf("start PL/0\n");
   s[1] = 0;
@@ -1623,292 +1635,294 @@ void interpret() {
     pre_p = p;
     ++p;
     switch (i.f) {
-    case lit:
-      ++t;
-      s[t] = i.a; // a 表示字面值常量
-      break;
-    case opr:
-      switch (i.a) { // operator
-      case 0:        // return
-        t = b - 1;
-        p = s[t + 3]; // RA
-        b = s[t + 2]; // DL
-        break;
-      case 1:
-        s[t] = -s[t];
-        break;
-      case 2:
-        --t;
-        s[t] += s[t + 1];
-        break;
-      case 3:
-        --t;
-        s[t] -= s[t + 1];
-        break;
-      case 4:
-        --t;
-        s[t] *= s[t + 1];
-        break;
-      case 5:
-        --t;
-        s[t] /= s[t + 1];
-        break;
-      case 6:
-        s[t] %= 2;
-        break;
-      case 8:
-        --t;
-        s[t] = (s[t] == s[t + 1]);
-        assert(s[t] == 1 || s[t] == 0);
-        break;
-      case 9:
-        --t;
-        s[t] = (s[t] != s[t + 1]);
-        assert(s[t] == 1 || s[t] == 0);
-        break;
-      case 10:
-        --t;
-        s[t] = (s[t] < s[t + 1]);
-        break;
-      case 11:
-        --t;
-        s[t] = (s[t] >= s[t + 1]);
-        break;
-      case 12:
-        --t;
-        s[t] = (s[t] > s[t + 1]);
-        break;
-      case 13:
-        --t;
-        s[t] = (s[t] <= s[t + 1]);
-        break;
-
-      case 14:
-        printf("%ld ", s[t]); // 暂时简单处理，直接输出一个空格 TODO:
-        --t;
-        break;
-
-      case 15:
-        printf("\n");
-        break;
-
-      case 16:
-        // printf("请输入数据：");
+      case lit:
         ++t;
-        scanf("%ld", &s[t]); // 增加类型后，应区别输入格式字符串
+        s[t] = i.a;  // a 表示字面值常量
+        break;
+      case opr:
+        switch (i.a) {  // operator
+          case 0:       // return
+            t = b - 1;
+            p = s[t + 3];  // RA
+            b = s[t + 2];  // DL
+            break;
+          case 1:
+            s[t] = -s[t];
+            break;
+          case 2:
+            --t;
+            s[t] += s[t + 1];
+            break;
+          case 3:
+            --t;
+            s[t] -= s[t + 1];
+            break;
+          case 4:
+            --t;
+            s[t] *= s[t + 1];
+            break;
+          case 5:
+            --t;
+            s[t] /= s[t + 1];
+            break;
+          case 6:
+            s[t] %= 2;
+            break;
+          case 8:
+            --t;
+            s[t] = (s[t] == s[t + 1]);
+            assert(s[t] == 1 || s[t] == 0);
+            break;
+          case 9:
+            --t;
+            s[t] = (s[t] != s[t + 1]);
+            assert(s[t] == 1 || s[t] == 0);
+            break;
+          case 10:
+            --t;
+            s[t] = (s[t] < s[t + 1]);
+            break;
+          case 11:
+            --t;
+            s[t] = (s[t] >= s[t + 1]);
+            break;
+          case 12:
+            --t;
+            s[t] = (s[t] > s[t + 1]);
+            break;
+          case 13:
+            --t;
+            s[t] = (s[t] <= s[t + 1]);
+            break;
+
+          case 14:
+            printf("%ld ", s[t]);  // 暂时简单处理，直接输出一个空格 TODO:
+            --t;
+            break;
+
+          case 15:
+            printf("\n");
+            break;
+
+          case 16:
+            // printf("请输入数据：");
+            ++t;
+            scanf("%ld", &s[t]);  // 增加类型后，应区别输入格式字符串
+            break;
+
+          case 17:
+            memcpy(&fa, &s[t], fsize);
+            printf("%.2f ", fa);  // 默认保留2位小数
+            break;
+
+          case 18:
+            memcpy(&fa, &s[t], fsize);
+            fa = -fa;
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 19:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            fa += fb;
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 20:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            fa -= fb;
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 21:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            fa *= fb;
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 22:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            fa /= fb;
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 23:
+            ++t;
+            scanf("%f", &fa);
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 24:
+            scanf("%*[^\n]%*c");  // or scanf("%*[^\n]");	//
+                                  // 下次读入数据时
+                                  // '\n' 会忽略
+            break;
+
+          case 26:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            s[t] = (fa < fb);
+            break;
+
+          case 27:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            s[t] = (fa >= fb);
+            break;
+
+          case 28:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            s[t] = (fa > fb);
+            break;
+
+          case 29:
+            --t;
+            memcpy(&fa, &s[t], fsize);
+            memcpy(&fb, &s[t + 1], fsize);
+            s[t] = (fa <= fb);
+            break;
+
+          case 30:
+            fa = (float)(s[t]);  // INTEGER 和 REAL 都是32位，将 INTEGER
+                                 // 隐式转换成
+                                 // REAL，可能丢失信息，下面同理
+            memcpy(&s[t], &fa, fsize);
+            break;
+
+          case 31:
+            fa = (float)(s[t - 1]);
+            memcpy(&s[t - 1], &fa, fsize);
+            break;
+
+          case 32:
+            --t;
+            assert(s[t] == 1 || s[t] == 0);
+            s[t] = s[t] || s[t + 1];
+            assert(s[t] == 1 || s[t] == 0);
+            break;
+
+          case 33:
+            --t;
+            s[t] = s[t] && s[t + 1];
+            break;
+
+          case 34:
+            s[t] = !s[t];
+            break;
+
+          case 35:
+            --t;
+            s[t] %= s[t + 1];
+            break;
+
+          case 36:
+            registr = s[t--];
+            break;
+
+          case 37:
+            s[++t] = registr;
+            break;
+
+          default:
+            assert(!"未定义的操作指令");
+            break;
+        }
         break;
 
-      case 17:
-        memcpy(&fa, &s[t], fsize);
-        printf("%.2f ", fa); // 默认保留2位小数
-        break;
-
-      case 18:
-        memcpy(&fa, &s[t], fsize);
-        fa = -fa;
-        memcpy(&s[t], &fa, fsize);
-        break;
-
-      case 19:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        fa += fb;
-        memcpy(&s[t], &fa, fsize);
-        break;
-
-      case 20:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        fa -= fb;
-        memcpy(&s[t], &fa, fsize);
-        break;
-
-      case 21:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        fa *= fb;
-        memcpy(&s[t], &fa, fsize);
-        break;
-
-      case 22:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        fa /= fb;
-        memcpy(&s[t], &fa, fsize);
-        break;
-
-      case 23:
+      case lod:
         ++t;
-        scanf("%f", &fa);
-        memcpy(&s[t], &fa, fsize);
+        s[t] = s[base(b, i.l) + i.a];
         break;
 
-      case 24:
-        scanf("%*[^\n]%*c"); // or scanf("%*[^\n]");	// 下次读入数据时
-                             // '\n' 会忽略
-        break;
-
-      case 26:
+      case sto:
+        s[base(b, i.l) + i.a] = s[t];
+        //	printf("%10d\n", s[t]);
         --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        s[t] = (fa < fb);
         break;
 
-      case 27:
+      case lda:
+        s[t] = s[base(b, i.l) + i.a + s[t]];
+        break;
+
+      case sta:  // store array element
+        s[base(b, i.l) + i.a + s[t - 1]] = s[t];
+        t -= 2;
+        break;
+
+      case cal:                   // generate new block mark
+        s[t + 1] = base(b, i.l);  // SL
+        s[t + 2] = b;             // DL
+        s[t + 3] = p;             // RA
+        b = t + 1;                // base 在 SL 的位置，都是 t+1
+        p = i.a;                  // callee 的入口地址
+        break;
+
+      case Int:
+        t += i.a;
+        break;
+
+      case jmp:
+        p = i.a;
+        break;
+      case jpc:
+        if (s[t] == 0) {
+          p = i.a;
+        }
         --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        s[t] = (fa >= fb);
         break;
 
-      case 28:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        s[t] = (fa > fb);
+      case jp0:
+        if (s[t] == 0) {
+          p = i.a;
+        }
         break;
 
-      case 29:
-        --t;
-        memcpy(&fa, &s[t], fsize);
-        memcpy(&fb, &s[t + 1], fsize);
-        s[t] = (fa <= fb);
+      case jp1:
+        if (s[t] != 0) {
+          p = i.a;
+        }
         break;
 
-      case 30:
-        fa = (float)(s[t]); // INTEGER 和 REAL 都是32位，将 INTEGER 隐式转换成
-                            // REAL，可能丢失信息，下面同理
-        memcpy(&s[t], &fa, fsize);
+      case ckb:
+        if (!(s[t - 1] <= s[t - 2] && s[t - 2] < s[t])) {
+          printf("ArrayIndexOutOfBoundsException at instructon %ld\n", pre_p);
+          // system("pause");
+          exit(1);
+        }
+        t -= 2;
         break;
 
-      case 31:
-        fa = (float)(s[t - 1]);
-        memcpy(&s[t - 1], &fa, fsize);
+      case ppa:
+        t -= i.a;
         break;
 
-      case 32:
-        --t;
-        assert(s[t] == 1 || s[t] == 0);
-        s[t] = s[t] || s[t + 1];
-        assert(s[t] == 1 || s[t] == 0);
-        break;
+      case rva:
+        first = t - i.a + 1;
+        last = t + 1;
+        if (last - first >= 2) {
+          for (; first < (last--); ++first) {
+            long tmp = s[first];
+            s[first] = s[last];
+            s[last] = tmp;
+          }
+        }
 
-      case 33:
-        --t;
-        s[t] = s[t] && s[t + 1];
-        break;
-
-      case 34:
-        s[t] = !s[t];
-        break;
-
-      case 35:
-        --t;
-        s[t] %= s[t + 1];
-        break;
-
-      case 36:
-        registr = s[t--];
-        break;
-
-      case 37:
-        s[++t] = registr;
         break;
 
       default:
         assert(!"未定义的操作指令");
         break;
-      }
-      break;
-
-    case lod:
-      ++t;
-      s[t] = s[base(b, i.l) + i.a];
-      break;
-
-    case sto:
-      s[base(b, i.l) + i.a] = s[t];
-      //	printf("%10d\n", s[t]);
-      --t;
-      break;
-
-    case lda:
-      s[t] = s[base(b, i.l) + i.a + s[t]];
-      break;
-
-    case sta: // store array element
-      s[base(b, i.l) + i.a + s[t - 1]] = s[t];
-      t -= 2;
-      break;
-
-    case cal:                  // generate new block mark
-      s[t + 1] = base(b, i.l); // SL
-      s[t + 2] = b;            // DL
-      s[t + 3] = p;            // RA
-      b = t + 1;               // base 在 SL 的位置，都是 t+1
-      p = i.a;                 // callee 的入口地址
-      break;
-
-    case Int:
-      t += i.a;
-      break;
-
-    case jmp:
-      p = i.a;
-      break;
-    case jpc:
-      if (s[t] == 0) {
-        p = i.a;
-      }
-      --t;
-      break;
-
-    case jp0:
-      if (s[t] == 0) {
-        p = i.a;
-      }
-      break;
-
-    case jp1:
-      if (s[t] != 0) {
-        p = i.a;
-      }
-      break;
-
-    case ckb:
-      if (!(s[t - 1] <= s[t - 2] && s[t - 2] < s[t])) {
-        printf("ArrayIndexOutOfBoundsException at instructon %ld\n", pre_p);
-        // system("pause");
-        exit(1);
-      }
-      t -= 2;
-      break;
-
-    case ppa:
-      t -= i.a;
-      break;
-
-    case rva:
-      first = t - i.a + 1;
-      last = t + 1;
-      if (last - first >= 2) {
-        for (; first < (last--); ++first) {
-          long tmp = s[first];
-          s[first] = s[last];
-          s[last] = tmp;
-        }
-      }
-
-      break;
-
-    default:
-      assert(!"未定义的操作指令");
-      break;
     }
   } while (p != 0);
   // printf("end PL/0\n");
@@ -1924,7 +1938,7 @@ void init() {
   }
 
   // reserved words name(保持有序已便二分查找)
-  strcpy(word[0], "Boolean   "); // 首字母大写
+  strcpy(word[0], "Boolean   ");  // 首字母大写
   strcpy(word[1], "and       ");
   strcpy(word[2], "array     ");
   strcpy(word[3], "begin     ");
@@ -2025,7 +2039,7 @@ void init() {
   g_num = 0;
   g_loop_depth = 0;
   err = 0;
-  cc = 0;
+  charCnt = 0;
   cx = 0;
   ll = 0;
   ch = ' ';
@@ -2053,7 +2067,7 @@ int main(int argc, char **argv) {
   init();
   //	printf("please input source program file name: ");
   //	sprintf(infilename, "C:\\Users\\Administrator\\Desktop\\pl0ext_doc\\test
-  //programs\\PreTest%ld.pl0", i);
+  // programs\\PreTest%ld.pl0", i);
   //	scanf("%s", infilename);
   //	printf("\n");
 
@@ -2066,7 +2080,8 @@ int main(int argc, char **argv) {
 
   getsym();
   table[tx].addr = cx;
-  block(declbegsys | statbegsys | period, tx); // Why declbegsys and statbegsys?
+  // Why declbegsys and statbegsys?
+  block(declbegsys | statbegsys | period, tx);
   free_para_link(table + 1, table + tx + 1);
   if (sym != period) {
     error(9);

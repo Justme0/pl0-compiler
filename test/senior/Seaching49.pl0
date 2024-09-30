@@ -18,7 +18,7 @@ function search(n:integer):integer;
 	while low<=high do
 	    begin
 		mid:=(low+high)div 2;
-		if data[mid]=n then begin search:=mid; exit end
+		if data[mid]=n then begin search:=mid; break end
 		else if data[mid]<n then low:=mid+1
 		else high:=mid-1
 	    end

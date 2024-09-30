@@ -1,8 +1,8 @@
 var num: integer;
 function fib(i: integer): integer;
 begin
-    if (i <= 1) then fib := i;
-    fib := fib(i - 1) + fib(i - 2);
+    if (i <= 1) then fib := i
+    else fib := fib(i - 1) + fib(i - 2);
 end;
 
 begin

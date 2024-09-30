@@ -8,21 +8,19 @@ var a: Arr;
 */
 function bsearch(first: integer; last: integer; value: integer): integer;
     var i: integer; /* 定义局部变量 */
-        ret: integer;
     begin
-        ret := last;
+        bsearch := last;
         while (first < last) do begin
             i := first + (last - first) div 2;
             if (a[i] = value) then begin
-                bsearch := i;   /* 相当于 return */
+                bsearch := i;
+                break;
             end else if (a[i] < value) then begin
                 first := i + 1;
             end else begin
                 last := i;
             end;
         end;
-
-        bsearch := ret;
     end;
 
 /*
@@ -46,7 +44,7 @@ function lowerBound(first: integer; last: integer; value: integer): integer;
             end;
         end;
 
-        bsearch := first;
+        lowerBound := first;
     end;
 
 /*

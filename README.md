@@ -1,33 +1,32 @@
 # 示例
 下面是用 PL/0 语言编写的二分查找程序，本编译器可解释执行它。
 
-``` c
-/* bsearch.pl0 */
+``` pascal
+/* binary search */
 
 type Arr = array[0..9] of integer; /* typedef an array */
 var a: Arr; /* define a global variable */
 
 /*
-** Find value in [first, last).
-** If found, return its index; otherwise return last index.
+** @brief Find value in [first, last).
+** @return If found, return its index; otherwise return last index.
+** @note function name `bsearch` is similar to Golang named return value.
 */
 function bsearch(first: integer; last: integer; value: integer): integer;
 var i: integer; /* define local variables */
-    ret: integer;
 begin
-    ret := last;
+    bsearch := last;
     while (first < last) do begin
         i := first + (last - first) div 2;
         if (a[i] = value) then begin
-            bsearch := i;   /* similar to return */
+            bsearch := i;
+            break;
         end else if (a[i] < value) then begin
             first := i + 1;
         end else begin
             last := i;
         end;
     end;
-
-    bsearch := ret;
 end;
 
 /* main() */
@@ -51,9 +50,9 @@ end.
 # 安装
 ```bash
 $ git clone https://github.com/Justme0/pl0-compiler.git
-$ cd pl0-compiler/src
-$ make
-$ ./pl0 test.pl0
+$ cd pl0-compiler
+$ ./build.sh
+$ src/pl0 test/readme_example.pl0
 ```
 
 # src 文件夹内容
