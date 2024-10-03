@@ -1,4 +1,6 @@
 set -ex
 
-clang-format -i src/pl0.{c,h} || true
-make -C src
+cd src
+clang-format -i pl0.* err.* || true
+make
+cd ..

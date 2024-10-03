@@ -1,11 +1,13 @@
 // pl/0 compiler with code generation
-#define _CRT_SECURE_NO_WARNINGS
-// #define NDEBUG
+
 #include "pl0.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "err.h"
 
 long g_line_num = 0;
 
@@ -28,7 +30,7 @@ void error(long n) {
       printf(" ");
     }
   }
-  printf("^%2ld\n", n);
+  printf("^%ld [%s]\n", n, getErrString(n));
   err++;
 }
 
@@ -1091,15 +1093,14 @@ BreakNode *statement(SymbolType fsys) {
     getsym();
     pbn = statement(fsys | semicolon | endsym);
     while (sym == semicolon || (sym & statbegsys)) {
-      BreakNode *pbn2 = NULL;
       if (sym == semicolon) {
         getsym();
       } else {
         error(10);
       }
-      pbn2 = statement(fsys | semicolon | endsym);
-      pbn =
-          list_cat(pbn, pbn2);  // 将 pbn2 接到 pbn 的尾部，pbn 原来可能是 NULL
+      BreakNode *pbn2 = statement(fsys | semicolon | endsym);
+      // 将 pbn2 接到 pbn 的尾部，pbn 原来可能是 NULL
+      pbn = list_cat(pbn, pbn2);
     }
     if (sym == endsym) {
       getsym();
@@ -1215,6 +1216,9 @@ BreakNode *statement(SymbolType fsys) {
       getsym();
     }
     gen(opr, 0, 15);
+  } else if (sym == returnsym) {
+    sym_type = getsym();
+    expr_type = expr(fsys | semicolon, sym_type);
   }
   test(fsys, 0, 19);
 
@@ -1932,6 +1936,8 @@ void interpret() {
  ** 初始化全局变量
  */
 void init() {
+  initErrNum();
+
   long i;
   for (i = 0; i < 256; i++) {
     ssym[i] = nul;
@@ -1961,12 +1967,13 @@ void init() {
   strcpy(word[20], "procedure ");
   strcpy(word[21], "read      ");
   strcpy(word[22], "real      ");
-  strcpy(word[23], "then      ");
-  strcpy(word[24], "true      ");
-  strcpy(word[25], "type      ");
-  strcpy(word[26], "var       ");
-  strcpy(word[27], "while     ");
-  strcpy(word[28], "write     ");
+  strcpy(word[23], "return    ");
+  strcpy(word[24], "then      ");
+  strcpy(word[25], "true      ");
+  strcpy(word[26], "type      ");
+  strcpy(word[27], "var       ");
+  strcpy(word[28], "while     ");
+  strcpy(word[29], "write     ");
 
   // reserved words symbol
   wsym[0] = booleansym;
@@ -1992,12 +1999,13 @@ void init() {
   wsym[20] = procsym;
   wsym[21] = readsym;
   wsym[22] = realsym;
-  wsym[23] = thensym;
-  wsym[24] = truesym;
-  wsym[25] = typesym;
-  wsym[26] = varsym;
-  wsym[27] = whilesym;
-  wsym[28] = writesym;
+  wsym[23] = returnsym;
+  wsym[24] = thensym;
+  wsym[25] = truesym;
+  wsym[26] = typesym;
+  wsym[27] = varsym;
+  wsym[28] = whilesym;
+  wsym[29] = writesym;
 
   // special symbol(single character)
   ssym[(unsigned)'+'] = plus;
@@ -2033,7 +2041,8 @@ void init() {
 
   // 设置声明、语句、因子的开始符号集
   declbegsys = constsym | varsym | procsym | funcsym;
-  statbegsys = beginsym | callsym | ifsym | whilesym | readsym | writesym;
+  statbegsys =
+      beginsym | callsym | ifsym | whilesym | readsym | writesym | returnsym;
   facbegsys = ident | number | lparen | truesym | falsesym | notsym | oddsym;
 
   g_num = 0;

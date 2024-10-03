@@ -1,10 +1,8 @@
 targets		= pl0
 CC		= gcc
 
-all		: $(targets)
+all:
+	$(CC) -g -Wall -Wextra -o pl0 pl0.c err.c
 
-pl0		: pl0.c pl0.h
-	$(CC) -g -Wall -Wextra -o $@ pl0.c
-
-clean		:
+clean:
 	rm -f $(targets)

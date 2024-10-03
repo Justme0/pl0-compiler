@@ -1,10 +1,12 @@
+#pragma once
+
 #include <float.h>
 #include <limits.h>
 #include <stdio.h>
 
 typedef unsigned long long SymbolType;
 
-#define norw 29    // no. of reserved words
+#define norw 30    // no. of reserved words
 #define txmax 100  // length of identifier table
 #define nmax 14    // max. no. of digits in numbers
 #define al 10      // length of identifiers
@@ -67,6 +69,7 @@ typedef unsigned long long SymbolType;
 #define lbracket 0x2000000000000
 #define rbracket 0x4000000000000
 #define rangesym 0x8000000000000
+#define returnsym 0x10000000000000
 
 enum object { CONSTANT, VARIABLE, PROC, FUNC, TAG };
 
