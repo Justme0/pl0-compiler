@@ -1900,7 +1900,8 @@ void interpret() {
 
       case ckb:
         if (!(s[t - 1] <= s[t - 2] && s[t - 2] < s[t])) {
-          printf("ArrayIndexOutOfBoundsException at instructon %ld\n", pre_p);
+          printf("ERROR: ArrayIndexOutOfBoundsException at instructon %ld\n",
+                 pre_p);
           // system("pause");
           exit(1);
         }
@@ -1925,6 +1926,7 @@ void interpret() {
         break;
 
       default:
+        printf("Unknown instruction=%d.\n", i.f);
         assert(!"未定义的操作指令");
         break;
     }

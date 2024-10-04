@@ -1,0 +1,75 @@
+type Arr = array[0..9] of integer;
+
+var
+a: Arr;
+
+procedure outputArr;
+var
+i: integer;
+begin
+    i := 0;
+    while i <= 9 do begin
+        write(i, a[i]);
+        i := i + 1;
+    end;
+end;
+
+/*
+** @brief Do parition for [first, last].
+** @return "middle" position which stores pivot
+*/
+function partition(first: integer; last: integer): integer;
+var
+x: integer;
+i: integer;
+j: integer;
+tmp: integer;
+begin
+    x := a[last];
+    i := first - 1;
+    j := first;
+    while j <= last - 1 do begin
+        if a[j] <= x then begin
+            i := i + 1;
+
+            tmp := a[i];
+            a[i] := a[j];
+            a[j] := tmp;
+        end;
+        j := j+1
+    end;
+    tmp := a[i+1];
+    a[i+1] := a[last];
+    a[last] := tmp;
+
+    partition := i + 1;
+end;
+
+/* for [first, last] */
+procedure quickSort(first: integer; last: integer);
+var
+mid: integer;
+begin
+    if (last > first) then begin
+        mid := partition(first, last);
+        /* write(111111, first, mid, last); */
+        call quickSort(first, mid-1);
+        call quickSort(mid+1, last);
+    end;
+end;
+
+begin
+    a[0] := 10;
+    a[1] := 9;
+    a[2] := 9;
+    a[3] := 9;
+    a[4] := 23;
+    a[5] := 9;
+    a[6] := 9;
+    a[7] := 9;
+    a[8] := 9;
+    a[9] := 0;
+
+    call quickSort(0, 9);
+    call outputArr;
+end.
