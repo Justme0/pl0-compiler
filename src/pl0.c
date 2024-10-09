@@ -1227,6 +1227,9 @@ BreakNode *statement(SymbolType fsys, long tx_func) {
     }
     gen(opr, 0, 36);  // 将返回值存到寄存器中
     gen(opr, 0, 0);
+    // OPT: if not all branch return value, should report error!
+    // ref: https://courses.cs.washington.edu/courses/cse401/02sp/pl0/proj.html
+    // "Return Statements"
   }
   test(fsys, 0, 19);
 
@@ -1843,6 +1846,7 @@ void interpret() {
             break;
 
           default:
+            printf("Unknown instruction i.a=%ld.\n", i.a);
             assert(!"未定义的操作指令");
             break;
         }
@@ -1930,7 +1934,7 @@ void interpret() {
         break;
 
       default:
-        printf("Unknown instruction=%d.\n", i.f);
+        printf("Unknown instruction i.f=%u.\n", i.f);
         assert(!"未定义的操作指令");
         break;
     }
