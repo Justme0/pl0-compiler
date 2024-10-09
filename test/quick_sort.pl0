@@ -42,7 +42,7 @@ begin
     a[i+1] := a[last];
     a[last] := tmp;
 
-    partition := i + 1;
+    return i + 1;
 end;
 
 /* for [first, last] */

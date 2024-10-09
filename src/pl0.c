@@ -85,9 +85,10 @@ long is_arr(TypeRecord const *const type) {
   assert(type != type_table);
   if (type != NULL) {
     assert(type->dope_vec.elem_type != type_table);
+
+    // 类型名未定义，外部应检测过
+    assert(type_table < type && type <= type_table + type_tx);
   }
-  // 类型名未定义，外部应检测过
-  assert(type_table < type && type <= type_table + type_tx);
   return type != NULL && type->dope_vec.elem_type != NULL;
 }
 
@@ -764,12 +765,10 @@ DataType term(SymbolType fsys, DataType down_type) {
       } else {
         error(41);
       }
-    } else {
-      assert(!"非法类型");
     }
   }
 
-  //	assert(NULL != factor_type1);
+  assert(NULL != factor_type1);
   return factor_type1;
 }
 
@@ -991,7 +990,7 @@ void actual_para_l(SymbolType fsys, DataType down_type, Record const *prcd) {
   }
 }
 
-BreakNode *statement(SymbolType fsys) {
+BreakNode *statement(SymbolType fsys, long tx_func) {
   DataType sym_type = NULL;
   DataType ident_ref_type = NULL;
   DataType expr_type = NULL;
@@ -1015,6 +1014,7 @@ BreakNode *statement(SymbolType fsys) {
     } else {
       error(13);
     }
+    // should use fsys|semicolon?
     expr_type = expr(fsys, sym_type);
     if (ident_ref_type == REAL && expr_type == INTEGER) {
       gen(opr, 0, 30);
@@ -1049,8 +1049,8 @@ BreakNode *statement(SymbolType fsys) {
           actual_para_l(fsys | rparen, sym_type, prcd);
           gen(rva, 0, prcd->para_num);  // 逆转实参，模拟实现参数逆序压栈
           gen(cal, lev - prcd->level, prcd->addr);
-          gen(ppa, 0,
-              prcd->para_num);  // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
+          // 栈顶指针恢复到参数压栈前的位置（对应实参压栈）
+          gen(ppa, 0, prcd->para_num);
           if (rparen == sym) {
             getsym();
           } else {
@@ -1076,14 +1076,14 @@ BreakNode *statement(SymbolType fsys) {
     }
     cx1 = cx;
     gen(jpc, 0, 0);
-    pbn = statement(fsys | elsesym);
+    pbn = statement(fsys | elsesym, tx_func);
     if (sym == elsesym) {
       BreakNode *pbn2 = NULL;
       getsym();
       code[cx1].a = cx + 1;  // cx 处放 jmp
       cx1 = cx;
       gen(jmp, 0, 0);
-      pbn2 = statement(fsys);
+      pbn2 = statement(fsys, tx_func);
       pbn = list_cat(pbn, pbn2);
       code[cx1].a = cx;  // 前面修改了 cx1
     } else {
@@ -1091,14 +1091,14 @@ BreakNode *statement(SymbolType fsys) {
     }
   } else if (sym == beginsym) {
     getsym();
-    pbn = statement(fsys | semicolon | endsym);
+    pbn = statement(fsys | semicolon | endsym, tx_func);
     while (sym == semicolon || (sym & statbegsys)) {
       if (sym == semicolon) {
         getsym();
       } else {
         error(10);
       }
-      BreakNode *pbn2 = statement(fsys | semicolon | endsym);
+      BreakNode *pbn2 = statement(fsys | semicolon | endsym, tx_func);
       // 将 pbn2 接到 pbn 的尾部，pbn 原来可能是 NULL
       pbn = list_cat(pbn, pbn2);
     }
@@ -1122,7 +1122,7 @@ BreakNode *statement(SymbolType fsys) {
       error(18);
     }
     ++g_loop_depth;
-    pbn = statement(fsys);
+    pbn = statement(fsys, tx_func);
     --g_loop_depth;
     gen(jmp, 0, cx1);  // 跳到测试条件 cx1
     code[cx2].a = cx;  // 若测试条件不满足则跳到 cx(cx 是循环外的第一条指令)
@@ -1219,6 +1219,14 @@ BreakNode *statement(SymbolType fsys) {
   } else if (sym == returnsym) {
     sym_type = getsym();
     expr_type = expr(fsys | semicolon, sym_type);
+    DataType dstType = table[tx_func].type;
+    if (dstType == REAL && expr_type == INTEGER) {
+      gen(opr, 0, 30);
+    } else if (dstType != expr_type) {
+      error(39);
+    }
+    gen(opr, 0, 36);  // 将返回值存到寄存器中
+    gen(opr, 0, 0);
   }
   test(fsys, 0, 19);
 
@@ -1448,8 +1456,6 @@ void formal_para_l() {
   }
 }
 
-void block(SymbolType fsys, long tx0);
-
 /*
  ** FuncDec -> procedure ident [(ForParal)]      ; Block; |
  **            function  ident [(ForParal)]: Type; Block;
@@ -1457,11 +1463,9 @@ void block(SymbolType fsys, long tx0);
  ** pdx:		pointer to data relative index
  */
 void func_dec(SymbolType fsys) {
-  long tmp_tx =
-      0;  // save current table index before processing nested procedures
-  long is_func = 0;
+  // save current table index before processing nested procedures
   assert(sym == procsym || sym == funcsym);
-  is_func = (sym == funcsym);
+  long is_func = (sym == funcsym);
   getsym();
   if (sym == ident) {
     enter(g_id, (is_func ? FUNC : PROC), NULL);
@@ -1470,7 +1474,7 @@ void func_dec(SymbolType fsys) {
     error(4);
   }
   ++lev;  // 将该过程的形参当成其局部变量
-  tmp_tx = tx;
+  long tmp_tx = tx;
   table[tx].addr = cx;  // 保存 jmp 的 cx
   if (sym == lparen) {
     getsym();
@@ -1595,7 +1599,7 @@ void block(SymbolType fsys, long tx0) {
   gen(Int, 0, dx);  // 分配内存数据段，3个单元加局部变量个数
   //	list_table(tx0);	// 输出符号表 (tx0, tx]
   // 每个后跟集都包含上层后跟集，以便补救
-  pbn = statement(fsys | semicolon | endsym);
+  pbn = statement(fsys | semicolon | endsym, tx0);
   if (NULL != pbn) {
     error(63);  // break 语句没有处于任何 while 语句中
   }

@@ -195,3 +195,5 @@ typedef struct BreakNode {
 } BreakNode;
 
 long g_loop_depth = 0;
+
+void block(SymbolType fsys, long tx0);

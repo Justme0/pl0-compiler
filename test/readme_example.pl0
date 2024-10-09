@@ -4,25 +4,24 @@ type Arr = array[0..9] of integer; /* typedef an array */
 var a: Arr; /* define a global variable */
 
 /*
-** @brief Find value in [first, last).
-** @return If found, return its index; otherwise return last index.
-** @note function name `bsearch` is similar to Golang named return value.
+** @brief Find value position in [first, last).
+** @return If found, return its index; otherwise -1.
 */
 function bsearch(first: integer; last: integer; value: integer): integer;
 var i: integer; /* define local variables */
 begin
-    bsearch := last;
     while (first < last) do begin
         i := first + (last - first) div 2;
         if (a[i] = value) then begin
-            bsearch := i;
-            break;
+            return i;
         end else if (a[i] < value) then begin
             first := i + 1;
         end else begin
             last := i;
         end;
     end;
+
+    return -1;
 end;
 
 /* main() */
@@ -36,8 +35,8 @@ begin
     a[6] := 8;
     a[7] := 11;
     a[8] := 22;
-    a[9] := 27;
+    a[9] := 23;
 
-    write(bsearch(0, 10, 22));  /* 8 */
-    write(bsearch(0, 10, -1));  /* 10 */
+    write(bsearch(0, 10, 22));  /* 8, found index */
+    write(bsearch(0, 10, 2));  /* -1, not found */
 end.
